@@ -1,8 +1,8 @@
 # Maintainer: your name <you@example.com>
 pkgname=btw5-switch
-pkgver=0.3
+pkgver=0.4
 pkgrel=1
-pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing)"
+pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
 arch=('any')
 url="https://github.com/doodersrage/btw5-switch"
 license=('unknown')
