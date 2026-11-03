@@ -1,46 +1,85 @@
-# btw5-switch - a simple script to modify the state of the Creative BT-W5 Bluetooth audio dongle on Linux
+# btw5-switch - control the Creative BT-W5 Bluetooth audio dongle on Linux
 
-## Usage:
+Switch aptX Adaptive modes, toggle HFP (headset microphone), scan for and pair headsets, and read device info, all without Creative's Windows/macOS app.
 
-0. Install Python and [PyUSB](https://github.com/pyusb/pyusb) (on Debian/Ubuntu: `apt install python3-usb`)
-1. Download btw5-switch.py from this repo
-2. Make the script executable: `chmod +x btw5-switch.py`
-3. Run `sudo ./btw5-switch.py ll`  (for low-latency mode) or `sudo ./btw5-switch.py hq` (for high-quality mode). The color of the light on the BT-W5 should change.
+## Install
 
-Note: As the script needs to send data to the USB device, you need to either adjust the permissions on the /dev/bus/usb/... device so that you user account has write access to it, or you need to execute it as root (e.g., using sudo, as documented above).
+### Arch Linux
+
+```sh
+git clone https://github.com/doodersrage/btw5-switch
+cd btw5-switch
+makepkg -si          # installs /usr/bin/btw5-switch, python-pyusb and a udev rule
+```
+
+Re-plug the dongle once so the udev rule applies. After that, no sudo is needed.
+
+### Other distributions
+
+1. Install Python and [PyUSB](https://github.com/pyusb/pyusb) (Debian/Ubuntu: `apt install python3-usb`, Fedora: `dnf install python3-pyusb`).
+2. Run `./btw5-switch.py ...` with `sudo`, **or** allow your user access to the dongle:
+   ```sh
+   sudo cp 70-btw5-switch.rules /etc/udev/rules.d/
+   sudo udevadm control --reload-rules
+   # re-plug the dongle
+   ```
+
+## Usage
+
+```
+btw5-switch status              # aptX mode, HFP and auto-HFP settings
+btw5-switch info                # firmware version and serial number
+btw5-switch ll                  # aptX Adaptive Low Latency
+btw5-switch hq                  # aptX Adaptive High Quality
+btw5-switch hfp on|off          # headset microphone (HFP) support
+btw5-switch auto-hfp on|off     # automatically switch to HFP when the mic is used
+btw5-switch scan [seconds]      # disconnect the headset and list nearby headsets (default 15 s)
+btw5-switch pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
+btw5-switch disconnect          # disconnect the current headset
+btw5-switch forget              # forget all paired headsets (asks first; -y to skip)
+btw5-switch -v <command>        # also hex-dump the USB traffic
+btw5-switch raw 6b 09 03        # send a raw command and print replies (protocol exploration)
+```
+
+Typical pairing flow: put the headset in pairing mode, run `btw5-switch scan`, then `btw5-switch pair <address>`.
+
+Notes:
+- `hfp` and `forget` make the dongle re-enumerate on USB, so it briefly disappears and comes back as a new audio device.
+- Volume is a standard USB Audio control, so use your desktop's volume slider, `wpctl` or `alsamixer`.
+- `scan` reports addresses and signal strength only. The dongle doesn't send headset names in the captured traffic.
 
 ## Creative BT-W5
 
 The Creative BT-W5 is a USB Bluetooth audio dongle.
 It is *not* a normal Bluetooth dongle, i.e. it cannot be used for connecting to non-audio devices.
 Instead, it acts as an USB audio device towards the computer and as Bluetooth host towards wireless headsets.
-In order to configure it, one needs to use one of the official Creative apps or this Python script.
 
 ## Protocol
 
-The BT-W5 appears as two USB 'devices' to the computer: an USB sound card (not requiring any driver), and a generic USB HID device.
-Configuration of the Bluetooth mode is done by sending data to the HID device.
-I have logged the communication between the Creative app on Windows and the BT-5W using [Wireshark](https://www.wireshark.org/) and the [USBPcap](https://github.com/desowin/usbpcap) extension and annotated frames with the actions that I did in the app at that time: [bt-w5.pcapng](bt-w5.pcapng).
+The BT-W5 appears as a USB sound card (interfaces 2-4, no driver needed) plus two HID interfaces.
+Configuration goes through HID interface 0. The tool sends output report 3 as a `SET_REPORT` control transfer, and replies come back as input report 3 on interrupt endpoint `0x81`.
+The communication between the Creative app on Windows and the dongle was logged with [Wireshark](https://www.wireshark.org/) and [USBPcap](https://github.com/desowin/usbpcap) and annotated: [bt-w5.pcapng](bt-w5.pcapng).
+
+Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
+
+| Command (cmd payload) | Meaning | Reply |
+|---|---|---|
+| `6b 0a 03 20` / `6b 0a 03 40` | aptX Adaptive LL / HQ | ack `02 0a 6b 00 0a` |
+| `6b 0a 01 01` / `6b 0a 01 02` | HFP on / off | ack, then USB re-enumeration |
+| `6b 0a 02 01` / `6b 0a 02 00` | auto-HFP on / off | ack, `6b 09 07 <val>` |
+| `6b 09 <key>` | read setting: `03` aptX, `06` HFP, `07` auto-HFP | `6b 09 <key> <val>` |
+| `6b 04 01` | disconnect and scan | `6b 05 <addr6> ?? ?? ?? <rssi int16 LE>` per device |
+| `6b 04 02 <addr6>` | connect to address | `6b 06 08/0b <addr6> ...` on connect |
+| `6b 07 ff` | forget all pairings | USB re-enumeration |
+| `09 02` / `09 03` | firmware version / serial | `09 <field> <ascii>` |
+
+Headset connection events arrive as `6b 06 <state> <addr6>` (`0a` disconnected, `08`/`0b` connecting/connected).
 
 ![](./btw5-wireshark.png)
 
 ## Status
 
-So far, only switching between AptX Adaptive Low Latency (LL) and High Quality (HQ) modes is supported.
+All commands were derived from the capture and checked against a replay of it, but haven't all been tested on real hardware yet. aptX LL/HQ switching is unchanged from the original script.
+If something doesn't behave as expected, run it with `-v` and open an issue with the output.
 
-The packet capture log includes USB communication for the following actions:
-
-- activate and deactivate HFP mode
-- activate and deactivate automatic HFP switching
-- disconnect headset
-- forget pairings
-- pair with headset
-- change headset volume
-
-I have not tested whether any of these work so far.
-As I don't own a BT-W5 myself, I have little time to implement support for the features above.
-
-If you want to implement e.g. HFP support, check out the packet capture log in Wireshark, look at the payload in the USB packets, and have the Python script send it.
-It seems like most commands are similar to the ll/hq switching, so the payload you are sending will/should only differ in a few bytes.
-
-Pull requests welcome.
+Based on [RaphaelWimmer/btw5-switch](https://github.com/RaphaelWimmer/btw5-switch). Pull requests welcome.
