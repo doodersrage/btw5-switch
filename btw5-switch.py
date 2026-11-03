@@ -59,6 +59,12 @@ HFP_VALUES = {"on": 0x01, "off": 0x02}
 AUTO_HFP_VALUES = {"on": 0x01, "off": 0x00}
 
 VERBOSE = False
+REJECTED = "rejected"  # get() result when the dongle refuses a query (ack status != 0)
+
+
+def is_ack(cmd, payload, sub):
+    """Ack frame: 5a 02 <len> 6b <status> <sub ...>; status 00 = OK, 80 seen for 'not available'."""
+    return cmd == 0x02 and len(payload) >= 3 and payload[0] == CMD_BT and payload[2] == sub
 
 
 def hexs(b):
@@ -167,13 +173,18 @@ class BTW5:
 
     def get(self, key):
         p = self.request(CMD_BT, [0x09, key],
-                         lambda c, p: c == CMD_BT and len(p) >= 2 and p[0] == 0x09 and p[1] == key)
-        return None if p is None else (p[2] if len(p) > 2 else 0)
+                         lambda c, p: (c == CMD_BT and len(p) >= 2 and p[0] == 0x09 and p[1] == key)
+                         or (is_ack(c, p, 0x09) and p[1] != 0))
+        if p is None:
+            return None
+        if p[0] == CMD_BT and p[1] != 0:   # dongle answered with a rejecting ack instead of a value
+            return REJECTED
+        return p[2] if len(p) > 2 else 0
 
     def set(self, key, value):
-        ack = self.request(CMD_BT, [0x0a, key, value],
-                           lambda c, p: c == 0x02 and len(p) >= 3 and p[0] == CMD_BT and p[2] == 0x0a)
-        return ack is not None
+        """Return the ack status (0 = accepted), or None if no ack arrived."""
+        ack = self.request(CMD_BT, [0x0a, key, value], lambda c, p: is_ack(c, p, 0x0a))
+        return None if ack is None else ack[1]
 
     def info(self, field):
         p = self.request(CMD_INFO, [field],
@@ -187,7 +198,19 @@ class BTW5:
 # --- commands ------------------------------------------------------------
 
 def onoff(v, on=1):
-    return "unknown" if v is None else ("on" if v == on else "off")
+    if v is None:
+        return "unknown (no reply)"
+    if v == REJECTED:
+        return "not available right now"
+    return "on" if v == on else "off"
+
+
+def report_set(status):
+    if status is None:
+        print("warning: no acknowledgement from the dongle", file=sys.stderr)
+    elif status != 0:
+        sys.exit(f"The dongle rejected the command (status 0x{status:02x}). "
+                 "Is a compatible headset connected?")
 
 
 def cmd_status(d, args):
@@ -198,6 +221,8 @@ def cmd_status(d, args):
         mode = APTX_NAMES[aptx]
     elif aptx is None:
         mode = "unknown (no reply)"
+    elif aptx == REJECTED:
+        mode = "not available (no aptX Adaptive headset connected?)"
     else:
         mode = f"not reported (0x{aptx:02x}; no aptX Adaptive headset connected?)"
     print(f"aptX Adaptive mode : {mode}")
@@ -212,19 +237,17 @@ def cmd_info(d, args):
 
 def cmd_aptx(d, args):
     print(f"Enabling aptX Adaptive {APTX_NAMES[APTX[args.cmd]]} mode")
-    if not d.set(SET_APTX, APTX[args.cmd]):
-        print("warning: no acknowledgement from the dongle", file=sys.stderr)
+    report_set(d.set(SET_APTX, APTX[args.cmd]))
 
 
 def cmd_hfp(d, args):
     print(f"Turning HFP {args.state} (the dongle will reconnect and re-appear as a new audio device)")
-    d.set(SET_HFP, HFP_VALUES[args.state])
+    report_set(d.set(SET_HFP, HFP_VALUES[args.state]))
 
 
 def cmd_auto_hfp(d, args):
     print(f"Turning automatic HFP switching {args.state}")
-    if not d.set(SET_AUTO_HFP, AUTO_HFP_VALUES[args.state]):
-        print("warning: no acknowledgement from the dongle", file=sys.stderr)
+    report_set(d.set(SET_AUTO_HFP, AUTO_HFP_VALUES[args.state]))
 
 
 def cmd_scan(d, args):

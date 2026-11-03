@@ -73,6 +73,8 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 | `6b 07 ff` | forget all pairings | USB re-enumeration |
 | `09 02` / `09 03` | firmware version / serial | `09 <field> <ascii>` |
 
+Acks look like `02 0a 6b <status> <sub>`. Status `00` means OK. `80` means rejected, for example `6b 09 03` (read aptX mode) when no aptX Adaptive headset is connected.
+
 Headset connection events arrive as `6b 06 <state> <addr6>` (`0a` disconnected, `08`/`0b` connecting/connected).
 
 ![](./btw5-wireshark.png)
