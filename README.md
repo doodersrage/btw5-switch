@@ -46,7 +46,7 @@ Typical pairing flow: put the headset in pairing mode, run `btw5-switch scan`, t
 Notes:
 - `hfp` and `forget` make the dongle re-enumerate on USB, so it briefly disappears and comes back as a new audio device.
 - Volume is a standard USB Audio control, so use your desktop's volume slider, `wpctl` or `alsamixer`.
-- `scan` reports addresses and signal strength only. The dongle doesn't send headset names in the captured traffic.
+- If a headset in pairing mode is nearby, the dongle often connects to it by itself during `scan`. The tool then reports the connection instead of a list.
 
 ## Creative BT-W5
 
@@ -68,14 +68,15 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 | `6b 0a 01 01` / `6b 0a 01 02` | HFP on / off | ack, then USB re-enumeration |
 | `6b 0a 02 01` / `6b 0a 02 00` | auto-HFP on / off | ack, `6b 09 07 <val>` |
 | `6b 09 <key>` | read setting: `03` aptX, `06` HFP, `07` auto-HFP | `6b 09 <key> <val>` |
-| `6b 04 01` | disconnect and scan | `6b 05 <addr6> ?? ?? ?? <rssi int16 LE>` per device |
+| `6b 04 01` | disconnect and scan | `6b 05 <addr6> <namelen> <name> <rssi int16 LE>` per device, or a connection event if it connects by itself |
+| `6b 02 00` | connected headset | `6b 02 00 80 <addr6> 1f <name>` |
 | `6b 04 02 <addr6>` | connect to address | `6b 06 08/0b <addr6> ...` on connect |
 | `6b 07 ff` | forget all pairings | USB re-enumeration |
 | `09 02` / `09 03` | firmware version / serial | `09 <field> <ascii>` |
 
 Acks look like `02 0a 6b <status> <sub>`. Status `00` means OK. `80` means rejected, for example `6b 09 03` (read aptX mode) when no aptX Adaptive headset is connected.
 
-Headset connection events arrive as `6b 06 <state> <addr6>` (`0a` disconnected, `08`/`0b` connecting/connected).
+Headset connection events arrive as `6b 06 <state> <addr6> 20 <name>`: `06` connecting, `08` connected, `0b` audio ready, `0a` disconnected.
 
 ![](./btw5-wireshark.png)
 

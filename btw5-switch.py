@@ -186,6 +186,15 @@ class BTW5:
         ack = self.request(CMD_BT, [0x0a, key, value], lambda c, p: is_ack(c, p, 0x0a))
         return None if ack is None else ack[1]
 
+    def connected_headset(self):
+        """Query the connected headset: 6b 02 00 -> 6b 02 00 80 <addr6> 1f <name>. Returns (addr, name)."""
+        p = self.request(CMD_BT, [0x02, 0x00],
+                         lambda c, p: (c == CMD_BT and len(p) >= 9 and p[0] == 0x02)
+                         or (is_ack(c, p, 0x02) and p[1] != 0))
+        if p is None or p[0] != 0x02 or not any(p[3:9]):
+            return None
+        return list(p[3:9]), cstr(p[10:])
+
     def info(self, field):
         p = self.request(CMD_INFO, [field],
                          lambda c, p: c == CMD_INFO and len(p) >= 1 and p[0] == field)
@@ -225,6 +234,8 @@ def cmd_status(d, args):
         mode = "not available (no aptX Adaptive headset connected?)"
     else:
         mode = f"not reported (0x{aptx:02x}; no aptX Adaptive headset connected?)"
+    hs = d.connected_headset()
+    print(f"Headset            : {describe(*hs) if hs else 'none / unknown'}")
     print(f"aptX Adaptive mode : {mode}")
     print(f"HFP (headset mic)  : {onoff(hfp, HFP_VALUES['on'])}")
     print(f"Auto HFP switching : {onoff(auto, AUTO_HFP_VALUES['on'])}")
@@ -250,26 +261,68 @@ def cmd_auto_hfp(d, args):
     report_set(d.set(SET_AUTO_HFP, AUTO_HFP_VALUES[args.state]))
 
 
+# Headset connection events: 6b 06 <state> <addr6> 20 <name\0...>
+CONN_STATES = {0x06: "connecting", 0x08: "connected", 0x0a: "disconnected", 0x0b: "audio ready"}
+
+
+def cstr(b):
+    return bytes(b).split(b"\0")[0].decode("utf-8", "replace")
+
+
+def parse_conn_event(cmd, p):
+    """Return (state, addr, name) for a connection event, else None."""
+    if cmd == CMD_BT and len(p) >= 8 and p[0] == 0x06:
+        return p[1], list(p[2:8]), cstr(p[9:]) if len(p) > 9 else ""
+    return None
+
+
+def parse_scan_result(cmd, p):
+    """Return (addr, name, rssi) for a scan report: 6b 05 <addr6> <namelen> <name> <rssi int16le>."""
+    if cmd == CMD_BT and len(p) >= 10 and p[0] == 0x05:
+        n = p[7]
+        if len(p) >= 8 + n + 2:
+            name = cstr(p[8:8 + n])
+            rssi = int.from_bytes(p[8 + n:10 + n], "little", signed=True)
+            return list(p[1:7]), name, rssi
+    return None
+
+
+def describe(addr, name):
+    return f"{name} ({fmt_addr(addr)})" if name else fmt_addr(addr)
+
+
 def cmd_scan(d, args):
     print("Disconnecting the current headset and scanning"
-          + (f" for {args.seconds:g}s" if args.seconds else "") + "...")
-    print("Put your headset into pairing mode now.")
+          + (f" for up to {args.seconds:g}s" if args.seconds else "") + "...")
+    if args.seconds:
+        print("Put your headset into pairing mode now.")
     d.drain()
     d.send(CMD_BT, [0x04, 0x01])
     if not args.seconds:
         return
     found = {}
     for cmd, p in d.listen(args.seconds):
-        if cmd == CMD_BT and len(p) >= 12 and p[0] == 0x05:
-            addr = fmt_addr(p[1:7])
-            rssi = int.from_bytes(p[10:12], "little", signed=True)
-            if addr not in found:
-                print(f"  found {addr}  rssi {rssi} dBm")
-            found[addr] = max(found.get(addr, -999), rssi)
+        r = parse_scan_result(cmd, p)
+        if r:
+            addr, name, rssi = r
+            key = fmt_addr(addr)
+            if key not in found:
+                print(f"  found {describe(addr, name)}  rssi {rssi} dBm")
+            found[key] = name
+            continue
+        ev = parse_conn_event(cmd, p)
+        if ev:
+            state, addr, name = ev
+            if state == 0x0b:
+                print(f"Connected to {describe(addr, name)}")
+                return
+            if state in (0x06, 0x08):
+                print(f"  {CONN_STATES[state]}: {describe(addr, name)}")
     if found:
         print("\nPair with:  btw5-switch pair <address>")
     else:
-        print("No devices found.")
+        print("No devices found. (The dongle connects to a headset in pairing mode by itself, "
+              "so also check 'btw5-switch status'.)")
 
 
 def cmd_pair(d, args):
@@ -278,11 +331,13 @@ def cmd_pair(d, args):
     d.drain()
     d.send(CMD_BT, [0x04, 0x02] + addr)
     for cmd, p in d.listen(args.timeout):
-        if cmd == CMD_BT and len(p) >= 8 and p[0] == 0x06 and list(p[2:8]) == addr:
-            if p[1] in (0x08, 0x0b):
-                print("Connected.")
+        ev = parse_conn_event(cmd, p)
+        if ev and ev[1] == addr:
+            state, _, name = ev
+            if state in (0x08, 0x0b):
+                print(f"Connected to {describe(addr, name)}.")
                 return
-            if p[1] == 0x0a:
+            if state == 0x0a:
                 print("Headset disconnected.")
     print("No connection confirmed yet (it may still connect; check 'btw5-switch status' "
           "or try again with the headset in pairing mode).")
