@@ -19,7 +19,7 @@ optdepends=('python-pyqt6: settings window and tray icon'
             'libnotify: desktop notifications (btw5-switch monitor --notify)')
 install=btw5-switch.install
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')  # replace with `updpkgsums` once the tag exists
+sha256sums=('d33fb3232909c35a0d91e91d3dd2f36ceae8fb44b755cbd54286086947edba95')
 
 build() {
   cd "$pkgname-$pkgver"

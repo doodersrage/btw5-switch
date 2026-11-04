@@ -17,6 +17,6 @@ pkgbase = btw5-switch
 	optdepends = pyside6: settings window and tray icon, alternative to PyQt6
 	optdepends = libnotify: desktop notifications (btw5-switch monitor --notify)
 	source = btw5-switch-0.6.tar.gz::https://github.com/doodersrage/btw5-switch/archive/refs/tags/v0.6.tar.gz
-	sha256sums = SKIP
+	sha256sums = d33fb3232909c35a0d91e91d3dd2f36ceae8fb44b755cbd54286086947edba95
 
 pkgname = btw5-switch
