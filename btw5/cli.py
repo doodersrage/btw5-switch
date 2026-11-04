@@ -12,7 +12,7 @@ import time
 from . import __version__
 from . import protocol as P
 from .device import (BTW5, REJECTED, BTW5Error, Busy, Gone, NotFound, PermissionDenied,
-                     read_status, wait_for_device)
+                     read_dump, read_status, wait_for_device)
 
 
 def emit_json(obj):
@@ -60,26 +60,7 @@ def cmd_info(d, args):
 
 def cmd_dump(d, args):
     """Every readable register, for protocol exploration and bug reports."""
-    def show(v):
-        if v is None:
-            return None
-        if v == REJECTED:
-            return "rejected"
-        return P.hexs(v)
-
-    settings = {f"{k:02x}": show(d.get_raw(k)) for k in P.GET_KEYS_ALL}
-    info = {"00": show(d.info(0x00)), "01 00": show(d.info(0x01, [0x00])),
-            "02": d.info_str(P.INFO_FIRMWARE), "03": d.info_str(P.INFO_SERIAL)}
-    conn = d.connection()
-    out = {
-        "settings (6b 09 <key>)": settings,
-        "info (09 <field>)": info,
-        "connection (6b 06)": None if conn is None else
-            {"state": f"{conn[0]:02x} ({P.conn_state_name(conn[0])})",
-             "address": P.fmt_addr(conn[1]), "name": conn[2]},
-        "pairing slots (6b 02)": [{"slot": s, "address": P.fmt_addr(a), "name": n}
-                                  for s, a, n in d.slots()],
-    }
+    out = read_dump(d)
     if args.json:
         return emit_json(out)
     for section, val in out.items():
@@ -148,32 +129,25 @@ def cmd_scan(d, args):
               + (f" for {args.seconds:g}s" if args.seconds else "") + "...")
         if args.seconds:
             print("Put your headset into pairing mode now.")
-    report_set(d.start_scan(), "scan")
     if not args.seconds:
+        report_set(d.start_scan(), "scan")
         if args.json:
             emit_json({"found": [], "connected": None})
         return
     found = {}
     connected = None
-    for cmd, p in d.listen(args.seconds):
-        if cmd != P.CMD_BT:
-            continue
-        r = P.parse_scan(p)
-        if r:
-            addr, name, rssi = r
+    for ev in d.scan_events(args.seconds):
+        if ev[0] == "found":
+            _, addr, name, rssi = ev
             if addr not in found and not args.json:
                 print(f"  {P.fmt_addr(addr)}  {rssi:4d} dBm  {name}")
             found[addr] = {"address": P.fmt_addr(addr), "name": name,
                            "rssi": max(rssi, found.get(addr, {}).get("rssi", -999))}
-            continue
-        # With a headset in pairing mode nearby, the dongle often connects to
-        # it by itself and sends connection events instead of scan results.
-        conn = P.parse_conn(p)
-        if conn and conn[0] == P.CONN_CONNECTED:
-            connected = {"address": P.fmt_addr(conn[1]), "name": conn[2]}
+        else:
+            _, addr, name = ev
+            connected = {"address": P.fmt_addr(addr), "name": name}
             if not args.json:
-                print(f"The dongle connected to {P.headset_label(conn[1], conn[2])} by itself.")
-            break
+                print(f"The dongle connected to {P.headset_label(addr, name)} by itself.")
     if args.json:
         return emit_json({"found": list(found.values()), "connected": connected})
     if connected:
@@ -209,20 +183,16 @@ def resolve_headset(d, target):
 def cmd_pair(d, args):
     addr = resolve_headset(d, args.headset)
     print(f"Connecting to {P.fmt_addr(addr)} ...")
-    status = d.connect(addr)
-    if status == P.STATUS_REJECTED:
+    result, name = d.connect_and_wait(addr, args.timeout)
+    if result == "connected":
+        print(f"Connected to {P.headset_label(addr, name)}.")
+        return
+    if result == "rejected":
         sys.exit("The dongle refused to connect (status 0x80): it can't reach the headset.\n"
                  "Make sure the headset is on and not connected to another device, or put it\n"
                  "in pairing mode, run 'btw5-switch scan', then pair while it's still listed.")
-    report_set(status, "connect request")
-    for cmd, p in d.listen(args.timeout):
-        conn = P.parse_conn(p) if cmd == P.CMD_BT else None
-        if conn and conn[1] == addr:
-            if conn[0] == P.CONN_CONNECTED:
-                print(f"Connected to {P.headset_label(conn[1], conn[2])}.")
-                return
-            if conn[0] == P.CONN_DISCONNECTED:
-                print("Headset disconnected.")
+    if result == "disconnected":
+        print("Headset disconnected.")
     sys.exit("No connection confirmed (check 'btw5-switch status', or try again with the headset "
              "in pairing mode).")
 
@@ -392,6 +362,11 @@ def cmd_waybar(args):
         time.sleep(args.interval)
 
 
+def cmd_gui(args):
+    from .window import main as window_main
+    window_main()
+
+
 def cmd_tray(args):
     from .tray import main as tray_main
     tray_main(interval=args.interval)
@@ -447,6 +422,7 @@ def build_parser():
     p = add("waybar", cmd_waybar, "print status as JSON for a waybar/polybar custom module", device=False)
     p.add_argument("--interval", type=float, default=0,
                    help="keep printing every N seconds (default: print once and exit)")
+    add("gui", cmd_gui, "open the BT-W5 Switch window (needs PyQt6 or PySide6)", device=False)
     p = add("tray", cmd_tray, "run a system tray icon (needs PyQt6 or PySide6)", device=False)
     p.add_argument("--interval", type=float, default=15, help="seconds between status refreshes")
 

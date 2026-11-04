@@ -313,6 +313,57 @@ class BTW5:
         """Ask the dongle to connect to addr. Returns the ack status."""
         return self.command(P.CMD_BT, [P.BT_SCAN, P.SCAN_CONNECT, *addr])
 
+    def scan_events(self, seconds, should_stop=None):
+        """Start a scan and yield what it finds for up to `seconds`:
+
+            ("found", addr, name, rssi)   for each scan report (repeats with fresh RSSI)
+            ("connected", addr, name)     if the dongle connects to a headset by itself
+                                          (it often does with one in pairing mode); ends the scan
+
+        The caller should check start_scan's ack first; this calls it and
+        raises BTW5Error if the dongle refuses. should_stop() can end it early."""
+        status = self.start_scan()
+        if status not in (P.STATUS_OK, None):
+            raise BTW5Error(f"The dongle refused to scan (status 0x{status:02x}).")
+        deadline = time.monotonic() + seconds
+        while (left := deadline - time.monotonic()) > 0:
+            if should_stop and should_stop():
+                return
+            r = self.recv(max(1, int(min(left, 0.2) * 1000)))  # stay responsive to should_stop
+            if r is None:
+                continue
+            cmd, p = r
+            if cmd != P.CMD_BT:
+                continue
+            r = P.parse_scan(p)
+            if r:
+                yield ("found", *r)
+                continue
+            conn = P.parse_conn(p)
+            if conn and conn[0] == P.CONN_CONNECTED:
+                yield ("connected", conn[1], conn[2])
+                return
+
+    def connect_and_wait(self, addr, timeout=15.0):
+        """Connect to addr and wait for the result.
+
+        Returns (status, name): status is "connected", "rejected" (the dongle
+        can't reach the headset), "disconnected" or "timeout"."""
+        status = self.connect(addr)
+        if status == P.STATUS_REJECTED:
+            return "rejected", None
+        if status not in (P.STATUS_OK, None):
+            raise BTW5Error(f"The dongle rejected the connect request (status 0x{status:02x}).")
+        result = "timeout", None
+        for cmd, p in self.listen(timeout):
+            conn = P.parse_conn(p) if cmd == P.CMD_BT else None
+            if conn and conn[1] == bytes(addr):
+                if conn[0] == P.CONN_CONNECTED:
+                    return "connected", conn[2]
+                if conn[0] == P.CONN_DISCONNECTED:
+                    result = "disconnected", conn[2]
+        return result
+
     def forget_all(self):
         self.send(P.CMD_BT, [P.BT_FORGET, 0xff])
 
@@ -337,4 +388,24 @@ def read_status(d):
         "aptx_mode": P.APTX_SHORT.get(aptx) if aptx not in (None, REJECTED) else None,
         "hfp": flag(hfp, P.HFP_VALUES["on"]),
         "auto_hfp": flag(auto, P.AUTO_HFP_VALUES["on"]),
+    }
+
+
+def read_dump(d):
+    """Every readable register, as a JSON-friendly dict (for 'dump' and bug reports)."""
+    def show(v):
+        if v is None:
+            return None
+        return "rejected" if v == REJECTED else P.hexs(v)
+
+    conn = d.connection()
+    return {
+        "settings (6b 09 <key>)": {f"{k:02x}": show(d.get_raw(k)) for k in P.GET_KEYS_ALL},
+        "info (09 <field>)": {"00": show(d.info(0x00)), "01 00": show(d.info(0x01, [0x00])),
+                              "02": d.info_str(P.INFO_FIRMWARE), "03": d.info_str(P.INFO_SERIAL)},
+        "connection (6b 06)": None if conn is None else
+            {"state": f"{conn[0]:02x} ({P.conn_state_name(conn[0])})",
+             "address": P.fmt_addr(conn[1]), "name": conn[2]},
+        "pairing slots (6b 02)": [{"slot": s, "address": P.fmt_addr(a), "name": n}
+                                  for s, a, n in d.slots()],
     }

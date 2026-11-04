@@ -91,7 +91,9 @@ class FakeDongle:
             q.append(ack(P.CMD_BT, self.connect_status, P.BT_SCAN))
             if self.connect_status == 0:
                 self.connected = True
-                q += [conn_frame(P.CONN_CONNECTING), conn_frame(P.CONN_CONNECTED)]
+                addr = bytes(p[2:8])
+                name = NAME if addr == HEADSET else b"New headset"
+                q += [conn_frame(P.CONN_CONNECTING, addr, name), conn_frame(P.CONN_CONNECTED, addr, name)]
         elif cmd == P.CMD_INFO:
             field = p[0]
             text = {P.INFO_FIRMWARE: b"\x101.2.230511.1220", P.INFO_SERIAL: b"YDSA0180415000934F"}

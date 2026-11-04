@@ -25,6 +25,7 @@ _btw5-switch() {
         'forget:forget all paired headsets'
         'monitor:print connection and setting changes as they happen'
         'waybar:print status as JSON for a status bar'
+        'gui:open the settings window'
         'tray:run a system tray icon'
         'raw:send a raw command'
     )

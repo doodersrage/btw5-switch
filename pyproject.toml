@@ -13,6 +13,7 @@ license-files = ["LICENSE"]
 dependencies = ["pyusb"]
 
 [project.optional-dependencies]
+gui = ["PyQt6"]
 tray = ["PyQt6"]
 
 [project.scripts]

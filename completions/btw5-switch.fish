@@ -1,5 +1,5 @@
 # fish completion for btw5-switch
-set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired forget monitor waybar tray raw
+set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired forget monitor waybar gui tray raw
 complete -c btw5-switch -f
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -s v -l verbose -d 'hex-dump USB traffic'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -s V -l version -d 'show version'
@@ -18,6 +18,7 @@ complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a paired -d 
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a forget -d 'forget all paired headsets'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a monitor -d 'watch for changes'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a waybar -d 'status bar JSON'
+complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a gui -d 'settings window'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a tray -d 'system tray icon'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a raw -d 'send a raw command'
 

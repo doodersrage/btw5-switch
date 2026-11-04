@@ -3,7 +3,7 @@ _btw5_switch() {
     local cur prev cmd i
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
-    local commands="status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired forget monitor waybar tray raw"
+    local commands="status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired forget monitor waybar gui tray raw"
 
     cmd=
     for ((i = 1; i < COMP_CWORD; i++)); do

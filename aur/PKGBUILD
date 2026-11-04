@@ -14,8 +14,8 @@ license=('MIT')
 depends=('python' 'python-pyusb')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 checkdepends=('python-pytest')
-optdepends=('python-pyqt6: tray icon (btw5-switch tray)'
-            'pyside6: tray icon, alternative to PyQt6'
+optdepends=('python-pyqt6: settings window and tray icon'
+            'pyside6: settings window and tray icon, alternative to PyQt6'
             'libnotify: desktop notifications (btw5-switch monitor --notify)')
 install=btw5-switch.install
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
@@ -28,7 +28,7 @@ build() {
 
 check() {
   cd "$pkgname-$pkgver"
-  /usr/bin/python -m pytest -q -p no:cacheprovider
+  QT_QPA_PLATFORM=offscreen /usr/bin/python -m pytest -q -p no:cacheprovider
 }
 
 package() {

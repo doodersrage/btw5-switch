@@ -3,7 +3,7 @@
 [![tests](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml)
 
 Switch aptX Adaptive modes, toggle HFP (headset microphone), scan for, pair and switch between headsets, and get notified when they connect, all without Creative's Windows/macOS app.
-Comes with a command line tool, a system tray icon and a status bar module.
+Comes with a settings window, a system tray icon, a command line tool and a status bar module.
 
 ## Install
 
@@ -17,12 +17,12 @@ makepkg -si
 
 This installs `/usr/bin/btw5-switch`, a udev rule, shell completions (bash, zsh, fish), a tray launcher and a systemd user unit.
 Re-plug the dongle once so the udev rule applies. After that, no sudo is needed.
-Optional: `python-pyqt6` (or `pyside6`) for the tray icon, `libnotify` for notifications.
+Optional: `python-pyqt6` (or `pyside6`) for the window and tray icon, `libnotify` for notifications.
 
 ### Other distributions
 
 ```sh
-pip install .                     # or: pip install '.[tray]' for the tray icon
+pip install .                     # or: pip install '.[gui]' for the window and tray icon
 sudo ./install-files.sh /         # udev rule, completions, desktop file, systemd unit
 sudo udevadm control --reload-rules   # then re-plug the dongle
 ```
@@ -46,6 +46,7 @@ btw5-switch pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
 btw5-switch disconnect          # disconnect the current headset
 btw5-switch forget              # forget all paired headsets (asks first; -y to skip)
 btw5-switch monitor [--notify]  # print headset and setting changes as they happen
+btw5-switch gui                 # settings window
 btw5-switch tray                # system tray icon
 btw5-switch waybar              # status as JSON for a status bar
 btw5-switch dump                # every readable register (for bug reports)
@@ -63,11 +64,23 @@ Notes:
 - `hfp` and `forget` make the dongle re-enumerate on USB, so it briefly disappears and comes back as a new audio device.
 - Volume is a standard USB Audio control, so use your desktop's volume slider, `wpctl` or `alsamixer`.
 
+### Settings window
+
+`btw5-switch gui`, or "BT-W5 Switch" in your application menu, shows everything in one place:
+
+- the connected headset and aptX mode
+- aptX Adaptive High Quality / Low Latency, headset microphone (HFP) and automatic HFP switching
+- the 4 pairing slots, with a Connect button for each remembered headset, plus Disconnect and Forget all
+- pairing a new headset: scan with a live list of nearby headsets and their signal strength, and a Pair button for each
+- firmware version, serial number, and a "Copy diagnostics" button for bug reports
+
+It needs PyQt6 or PySide6, and works alongside the tray, the CLI and `monitor`.
+
 ### Tray icon
 
 `btw5-switch tray` (or "BT-W5 Switch" in your application menu) shows the headset and settings in its tooltip, and its menu switches aptX mode, HFP, auto HFP and between paired headsets.
-Left click toggles Low Latency / High Quality. It needs PyQt6 or PySide6.
-To start it on login, copy `/usr/share/applications/btw5-switch-tray.desktop` to `~/.config/autostart/`.
+Left click toggles Low Latency / High Quality, and "Open BT-W5 Switch…" in its menu opens the settings window. It needs PyQt6 or PySide6.
+To start it on login, copy `/usr/share/applications/btw5-switch-tray.desktop` ("BT-W5 Switch (tray icon)") to `~/.config/autostart/`.
 
 ### Notifications
 
@@ -136,12 +149,12 @@ python -m pytest            # protocol parsers against the capture, plus a fake 
 ./btw5-switch.py status     # run from the checkout
 ```
 
-Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB access, requests), `btw5/broker.py` (sharing the dongle), `btw5/cli.py`, `btw5/tray.py`.
+Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB access, requests), `btw5/broker.py` (sharing the dongle), `btw5/cli.py`, `btw5/window.py` and `btw5/tray.py` (sharing `btw5/qt.py`).
 `aur/` holds the release PKGBUILD.
 
 ## Status
 
-Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `hfp`, `auto-hfp`, `disconnect`, `monitor` (including following the dongle through HFP re-enumeration and sharing it with other commands), `waybar` and the tray.
+Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `hfp`, `auto-hfp`, `disconnect`, `monitor` (including following the dongle through HFP re-enumeration and sharing it with other commands), `waybar`, the tray and the settings window.
 Not yet confirmed on hardware: `scan` actually listing a headset, `pair` completing a connection (so far the dongle refused because the headset wasn't reachable), and `forget`.
 If something doesn't behave as expected, run it with `-v` and open an issue with the output.
 
