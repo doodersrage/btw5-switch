@@ -7,7 +7,7 @@ name = "btw5-switch"
 dynamic = ["version"]
 description = "Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = ["pyusb"]
 
 [project.optional-dependencies]
@@ -27,3 +27,4 @@ version = {attr = "btw5.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+faulthandler_timeout = 60  # dump tracebacks if a test hangs

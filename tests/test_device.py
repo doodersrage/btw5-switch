@@ -54,3 +54,53 @@ def test_verbose_logs_traffic(capsys):
         d.get(P.GET_HFP)
     out = capsys.readouterr().out
     assert ">> 03 5a 6b 02 09 06" in out and "<< 03 5a 6b 03 09 06 02" in out
+
+
+# --- several programs share the dongle through the broker and see each other's replies
+
+class CrossTalk(FakeDongle):
+    """Before answering, deliver a reply that belongs to some other program."""
+
+    def __init__(self, foreign, **kw):
+        super().__init__(**kw)
+        self.foreign = foreign
+
+    def write(self, data):
+        self.queue.append(self.foreign)
+        super().write(data)
+
+
+def test_someone_elses_rejected_get_is_not_our_answer():
+    from tests.fakes import ack
+    with BTW5(CrossTalk(ack(P.CMD_BT, P.STATUS_REJECTED, P.BT_GET))) as d:
+        assert d.get(P.GET_HFP) == 0x02
+
+
+def test_our_own_rejected_get_is_still_reported():
+    with BTW5(FakeDongle(connected=False)) as d:
+        assert d.get(P.GET_APTX) == REJECTED
+
+
+def test_someone_elses_set_ack_is_not_our_answer():
+    from tests.fakes import report
+    other = report(P.CMD_ACK, [P.CMD_BT, P.STATUS_REJECTED, P.BT_SET, P.SET_HFP, 0x01])
+    with BTW5(CrossTalk(other)) as d:
+        assert d.set(P.SET_APTX, 0x20) == P.STATUS_OK
+
+
+def test_usb_errors_become_btw5_errors():
+    import errno
+
+    import pytest
+
+    from btw5.device import BTW5Error, Gone, usb_error
+
+    class E(Exception):
+        def __init__(self, n):
+            self.errno = n
+    assert isinstance(usb_error(E(errno.ENODEV)), Gone)
+    assert isinstance(usb_error(E(errno.EPIPE)), Gone)
+    err = usb_error(E(errno.ETIMEDOUT))
+    assert isinstance(err, BTW5Error) and not isinstance(err, Gone)
+    with pytest.raises(BTW5Error):
+        raise err

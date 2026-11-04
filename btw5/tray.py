@@ -4,6 +4,7 @@ All dongle I/O happens on a worker thread; each action opens the dongle,
 does its job and lets go, so the CLI keeps working while the tray runs.
 """
 
+import signal
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
@@ -53,7 +54,7 @@ class Tray:
         self.bridge = Bridge()
         self.bridge.done.connect(lambda cb, r: cb(r))
         self.state = None
-        self.last_headset = False  # unknown
+        self.quitting = False
 
         self.icon = QSystemTrayIcon(theme_icon(*ICON_NAMES))
         self.icon.setToolTip("BT-W5")
@@ -185,6 +186,9 @@ class Tray:
         m.addAction("Quit").triggered.connect(self.quit)
 
     def quit(self):
+        if self.quitting:
+            return
+        self.quitting = True
         self.timer.stop()
         self.pool.shutdown(wait=True, cancel_futures=True)
         self.app.quit()
@@ -196,8 +200,18 @@ def main(interval=15):
     app.setQuitOnLastWindowClosed(False)
     if not QSystemTrayIcon.isSystemTrayAvailable():
         sys.exit("No system tray available.")
-    tray = Tray(app, interval)  # noqa: F841 (keep a reference)
-    sys.exit(app.exec())
+    tray = Tray(app, interval)
+
+    # Qt's event loop doesn't let Python run signal handlers on its own; a
+    # short heartbeat timer does, so SIGTERM/Ctrl-C quit cleanly (and promptly).
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda *_: tray.quit())
+    heartbeat = QTimer()
+    heartbeat.timeout.connect(lambda: None)
+    heartbeat.start(300)
+    code = app.exec()
+    tray.quit()  # also after the event loop ended some other way; waits for a running job
+    sys.exit(code)
 
 
 if __name__ == "__main__":

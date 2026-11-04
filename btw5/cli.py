@@ -1,6 +1,7 @@
 """btw5-switch command line interface."""
 
 import argparse
+import errno
 import json
 import shutil
 import signal
@@ -10,7 +11,8 @@ import time
 
 from . import __version__
 from . import protocol as P
-from .device import BTW5, REJECTED, BTW5Error, Gone, NotFound, read_status, wait_for_device
+from .device import (BTW5, REJECTED, BTW5Error, Busy, Gone, NotFound, PermissionDenied,
+                     read_status, wait_for_device)
 
 
 def emit_json(obj):
@@ -42,12 +44,10 @@ def cmd_status(d, args):
     aptx = st["aptx_mode"]
     mode = {"LL": "Low Latency", "HQ": "High Quality"}.get(aptx, "not available (no aptX Adaptive headset connected?)")
 
-    def onoff(v):
-        return "unknown" if v is None else ("on" if v else "off")
     print(f"Headset            : {headset}")
     print(f"aptX Adaptive mode : {mode}")
-    print(f"HFP (headset mic)  : {onoff(st['hfp'])}")
-    print(f"Auto HFP switching : {onoff(st['auto_hfp'])}")
+    print(f"HFP (headset mic)  : {onoff_unknown(st['hfp'])}")
+    print(f"Auto HFP switching : {onoff_unknown(st['auto_hfp'])}")
 
 
 def cmd_info(d, args):
@@ -150,6 +150,8 @@ def cmd_scan(d, args):
             print("Put your headset into pairing mode now.")
     report_set(d.start_scan(), "scan")
     if not args.seconds:
+        if args.json:
+            emit_json({"found": [], "connected": None})
         return
     found = {}
     connected = None
@@ -189,7 +191,10 @@ def resolve_headset(d, target):
         return P.parse_addr(target)
     except ValueError:
         pass
-    slots = [s for s in d.slots() if s[1] != P.ZERO_ADDR]
+    slots = d.slots()
+    if not slots:
+        sys.exit("Couldn't read the pairing slots to look up that name; try again or use the address.")
+    slots = [s for s in slots if s[1] != P.ZERO_ADDR]
     exact = [s for s in slots if s[2].lower() == target.lower()]
     matches = exact or [s for s in slots if target.lower() in s[2].lower()]
     if len(matches) == 1:
@@ -235,8 +240,23 @@ def cmd_forget(d, args):
     d.forget_all()
 
 
+def hex_byte(s):
+    try:
+        v = int(s, 16)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{s}' is not a hex byte") from None
+    if not 0 <= v <= 0xff:
+        raise argparse.ArgumentTypeError(f"'{s}' is out of range (00-ff)")
+    return v
+
+
+MAX_PAYLOAD = P.REPORT_LEN - 4
+
+
 def cmd_raw(d, args):
     cmd, payload = args.bytes[0], args.bytes[1:]
+    if len(payload) > MAX_PAYLOAD:
+        sys.exit(f"At most {MAX_PAYLOAD} payload bytes fit in a report.")
     d.drain()
     d.send(cmd, payload)
     for c, p in d.listen(args.listen):
@@ -274,35 +294,72 @@ def cmd_monitor(args):
         for cmd, payload in P.STATE_QUERIES:
             send(P.build_report(cmd, payload))
 
+    def own(t, path):
+        """We hold the dongle: share it (if we can) and watch it until it goes away."""
+        try:
+            b = Broker(t, path)
+            b.__enter__()
+        except OSError as e:
+            if e.errno == errno.EADDRINUSE:
+                return  # another monitor won the race; listen along next round
+            say(f"not sharing the dongle ({e.strerror}); other btw5-switch commands will report it busy")
+            ask_state(t.write)
+            while True:
+                if raw := t.read(1000):
+                    handle(*P.split_report(raw))
+        try:
+            if args.verbose:
+                say(f"sharing the dongle on {path}")
+            ask_state(t.write)
+            b.run(lambda raw: handle(*P.split_report(raw)))
+        finally:
+            b.__exit__(None, None, None)
+
     print("Watching dongle events (Ctrl-C to stop)...", file=sys.stderr)
+    away = False   # True while waiting for the dongle to come back
     while True:
         try:
-            if broker_available():
+            path = socket_path()
+            if path and broker_available(path):
                 # Someone else owns the dongle and shares it: just listen along.
-                with BTW5(transport=SocketTransport(), verbose=args.verbose) as d:
+                with BTW5(transport=SocketTransport(path), verbose=args.verbose) as d:
+                    if away:
+                        say("dongle back")
+                        away = False
                     ask_state(d.t.write)
                     while True:
                         if r := d.recv(1000):
                             handle(*r)
             else:
-                t = UsbTransport(busy_wait=0)
+                t = UsbTransport()
                 t.open()
                 try:
-                    with Broker(t) as b:
-                        if args.verbose:
-                            say(f"sharing the dongle on {socket_path()}")
-                        ask_state(t.write)
-                        b.run(lambda raw: handle(*P.split_report(raw)))
+                    if away:
+                        say("dongle back")
+                        away = False
+                    own(t, path)
                 finally:
                     t.close()
+        except (Busy, PermissionDenied):
+            # Right after re-enumeration another program may grab the dongle
+            # first, or logind may not have granted us access yet: retry.
+            if not away:
+                raise
+            time.sleep(1)
         except (Gone, NotFound):
             if not args.reconnect:
-                raise Gone() from None
-            say("dongle gone, waiting for it to come back...")
-            tracker = P.ChangeTracker()
+                raise
+            # Keep the tracked state: HFP changes happen exactly here (the dongle
+            # re-enumerates), and they should still be reported as changes.
+            if not away:
+                say("dongle gone, waiting for it to come back...")
+                away = True
             wait_for_device()
             time.sleep(1)  # let it finish enumerating
-            say("dongle back")
+
+
+def onoff_unknown(v):
+    return "unknown" if v is None else ("on" if v else "off")
 
 
 def waybar_state():
@@ -321,8 +378,8 @@ def waybar_state():
         text += f" · {mode}"
     tip = [f"Headset: {h['name']} ({h['address']})" if h else "Headset: none connected",
            f"aptX Adaptive: {mode or 'n/a'}",
-           f"HFP: {'on' if st['hfp'] else 'off'}",
-           f"Auto HFP: {'on' if st['auto_hfp'] else 'off'}"]
+           f"HFP: {onoff_unknown(st['hfp'])}",
+           f"Auto HFP: {onoff_unknown(st['auto_hfp'])}"]
     return {"text": text, "alt": mode or "none", "class": "connected" if h else "disconnected",
             "tooltip": "\n".join(tip)}
 
@@ -394,7 +451,7 @@ def build_parser():
     p.add_argument("--interval", type=float, default=15, help="seconds between status refreshes")
 
     p = add("raw", cmd_raw, "send a raw command, e.g. 'raw 6b 09 03' (for protocol exploration)")
-    p.add_argument("bytes", nargs="+", type=lambda s: int(s, 16))
+    p.add_argument("bytes", nargs="+", type=hex_byte, help="hex bytes: command, then payload")
     p.add_argument("--listen", type=float, default=2.0, help="seconds to print replies")
     return ap
 

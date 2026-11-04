@@ -71,7 +71,7 @@ def test_parse_addr():
 
 def test_split_report_handles_foreign_reports():
     assert P.split_report(b"\x01\x02") == (None, b"\x01\x02")
-    assert P.split_report(b"\x03\xdf\x01\x02")[0] == 0xdf
+    assert P.split_report(b"\x03\x6b\x01\x02")[0] is None  # not a 03 5a frame
 
 
 def test_scan_with_long_name():

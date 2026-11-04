@@ -66,6 +66,13 @@ def wait_for_device(timeout=None, poll=1.0):
     return True
 
 
+def usb_error(e):
+    """Map a PyUSB error to a BTW5Error the CLI, broker and tray know how to handle."""
+    if e.errno in (errno.ENODEV, errno.EIO, errno.EPIPE, errno.ESHUTDOWN):
+        return Gone()
+    return BTW5Error(f"USB error talking to the BT-W5: {e}")
+
+
 class UsbTransport:
     """Claims HID interface 0 with PyUSB.
 
@@ -85,23 +92,25 @@ class UsbTransport:
         if self.dev is None:
             raise NotFound()
         deadline = time.monotonic() + self.busy_wait
-        while True:
-            try:
-                if self.dev.is_kernel_driver_active(HID_INTERFACE):
-                    self.dev.detach_kernel_driver(HID_INTERFACE)
-                    self.reattach = True
-                usb.util.claim_interface(self.dev, HID_INTERFACE)
-                return
-            except usb.core.USBError as e:
-                if e.errno == errno.EACCES:
-                    raise PermissionDenied() from None
-                if e.errno == errno.ENODEV:
-                    raise Gone() from None
-                if e.errno != errno.EBUSY:
-                    raise
-                if time.monotonic() >= deadline:
-                    raise Busy() from None
-                time.sleep(0.2)  # another short-lived btw5-switch (tray, status bar) has it
+        try:
+            while True:
+                try:
+                    if self.dev.is_kernel_driver_active(HID_INTERFACE):
+                        self.dev.detach_kernel_driver(HID_INTERFACE)
+                        self.reattach = True
+                    usb.util.claim_interface(self.dev, HID_INTERFACE)
+                    return
+                except usb.core.USBError as e:
+                    if e.errno == errno.EACCES:
+                        raise PermissionDenied() from None
+                    if e.errno != errno.EBUSY:
+                        raise usb_error(e) from None
+                    if time.monotonic() >= deadline:
+                        raise Busy() from None
+                    time.sleep(0.2)  # another short-lived btw5-switch (tray, status bar) has it
+        except BaseException:
+            self.close()  # don't leave the interface detached from its driver
+            raise
 
     def close(self):
         if self.dev is None:
@@ -126,9 +135,7 @@ class UsbTransport:
             self.dev.ctrl_transfer(0x21, 0x09, wValue=0x0200 | P.REPORT_ID,
                                    wIndex=HID_INTERFACE, data_or_wLength=data)
         except self.usb.core.USBError as e:
-            if e.errno in (errno.ENODEV, errno.EIO):
-                raise Gone() from None
-            raise
+            raise usb_error(e) from None
 
     def read(self, timeout_ms):
         """Next input report, or None on timeout."""
@@ -137,9 +144,7 @@ class UsbTransport:
         except self.usb.core.USBError as e:
             if e.errno == errno.ETIMEDOUT or (e.errno is None and "timed out" in str(e).lower()):
                 return None
-            if e.errno in (errno.ENODEV, errno.EIO, errno.EPIPE):
-                raise Gone() from None
-            raise
+            raise usb_error(e) from None
 
 
 class BTW5:
@@ -175,11 +180,14 @@ class BTW5:
         if raw is None:
             return None
         if self.verbose:
-            print(f"<< {P.hexs(raw.rstrip(b'\0'))}", file=self.log)
+            print("<< " + P.hexs(raw.rstrip(b"\0")), file=self.log)
         return P.split_report(raw)
 
-    def drain(self):
-        while self.recv(30) is not None:
+    def drain(self, max_seconds=0.2):
+        """Discard stale reports. Bounded in time: with the dongle shared, other
+        programs' traffic can keep arriving, and replies are matched anyway."""
+        deadline = time.monotonic() + max_seconds
+        while time.monotonic() < deadline and self.recv(30) is not None:
             pass
 
     def listen(self, seconds):
@@ -198,11 +206,27 @@ class BTW5:
                 return p
         return None
 
-    def command(self, cmd, payload, timeout=1.5):
-        """Send a command and return its ack status (0 = accepted), or None if no ack came."""
+    def command(self, cmd, payload, timeout=1.5, echo=1):
+        """Send a command and return its ack status (0 = accepted), or None if no ack came.
+
+        Acks repeat the start of the request payload: 'set' acks echo all of
+        '0a <key> <val>', most others only the first byte. echo says how many
+        bytes to compare, so replies to other processes sharing the dongle
+        (see broker.py) aren't mistaken for ours."""
+        want = bytes(payload[:echo])
+
         def is_my_ack(c, p):
             a = P.parse_ack(c, p)
-            return a is not None and a[0] == cmd and (a[2] is None or not payload or a[2] == payload[0])
+            if a is None or a[0] != cmd:
+                return False
+            if a[2] is None or not want:
+                return True
+            got = bytes(p[2:2 + len(want)]).ljust(len(want), b"\0")
+            if got == want:
+                return True
+            # A rejection may echo only the first byte (rest zero); one that
+            # echoes something else is a reply to another program's request.
+            return a[1] != P.STATUS_OK and got[:1] == want[:1] and not any(got[1:])
         p = self.request(cmd, payload, is_my_ack, timeout)
         return None if p is None else p[1]
 
@@ -218,7 +242,15 @@ class BTW5:
         p = self.request(P.CMD_BT, [P.BT_GET, key], match)
         if p is None:
             return None
-        return bytes(p[2:]) if p[0] == P.BT_GET else REJECTED
+        if p[0] == P.BT_GET:
+            return bytes(p[2:])
+        # The rejection doesn't say which key it was for, and with several
+        # programs sharing the dongle it may be someone else's. If our value
+        # still turns up shortly, that's the real answer.
+        for c, q in self.listen(0.15):
+            if c == P.CMD_BT and len(q) >= 2 and q[0] == P.BT_GET and q[1] == key:
+                return bytes(q[2:])
+        return REJECTED
 
     def get(self, key):
         """Setting value, REJECTED if the dongle refused, or None on no reply."""
@@ -229,7 +261,7 @@ class BTW5:
 
     def set(self, key, value):
         """Ack status (0 = accepted), or None if no ack arrived."""
-        return self.command(P.CMD_BT, [P.BT_SET, key, value])
+        return self.command(P.CMD_BT, [P.BT_SET, key, value], echo=3)
 
     def info(self, field, extra=()):
         p = self.request(P.CMD_INFO, [field, *extra],

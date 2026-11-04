@@ -64,7 +64,7 @@ class FakeDongle:
                 q.append(ack(P.CMD_BT, 0x81, P.BT_GET))
         elif cmd == P.CMD_BT and p[0] == P.BT_SET:
             key, val = p[1], p[2]
-            q.append(ack(P.CMD_BT, 0x00, P.BT_SET))
+            q.append(report(P.CMD_ACK, [P.CMD_BT, 0x00, P.BT_SET, key, val]))  # set acks echo key+value
             if key == P.SET_APTX:
                 self.settings[P.GET_APTX] = self.settings[P.GET_APTX_ACTIVE] = val
                 q.append(report(P.CMD_BT, [P.BT_GET, P.GET_APTX_ACTIVE, val]))

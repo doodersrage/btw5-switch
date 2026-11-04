@@ -1,4 +1,5 @@
 import threading
+import time
 
 import pytest
 
@@ -69,3 +70,50 @@ def test_socket_transport_without_broker(sock):
     from btw5.device import NotFound
     with pytest.raises(NotFound):
         broker.SocketTransport(sock).open()
+
+
+def test_client_that_stops_reading_does_not_stall_others(sock):
+    """A suspended 'btw5-switch scan' (Ctrl-Z) used to freeze the broker for everyone."""
+    import socket as so
+
+    from tests.fakes import conn_frame
+
+    class Chatty(FakeDongle):
+        def read(self, timeout_ms):
+            if self.queue:
+                return super().read(timeout_ms)
+            time.sleep(0.001)  # ~1000 events/s: far more than a real dongle sends
+            return conn_frame(P.CONN_CONNECTED).ljust(P.REPORT_LEN, b"\0")
+
+    fake, seen, stop = Chatty(), [], threading.Event()
+    with broker.Broker(fake, path=sock) as b:
+        th = threading.Thread(target=serve, args=(b, seen, stop))
+        th.start()
+        try:
+            lazy = so.socket(so.AF_UNIX, so.SOCK_SEQPACKET)
+            lazy.connect(sock)  # never reads
+            deadline = time.monotonic() + 5
+            while len(seen) < 2000 and time.monotonic() < deadline:
+                time.sleep(0.05)
+            assert len(seen) >= 2000, "broker stalled behind a client that doesn't read"
+            with BTW5(broker.SocketTransport(sock)) as d:
+                assert d.get(P.GET_HFP) == 0x02
+            lazy.close()
+        finally:
+            stop.set()
+            th.join(5)
+
+
+def test_unsafe_socket_dir_is_refused(tmp_path, monkeypatch):
+    shared = tmp_path / "shared"
+    shared.mkdir(mode=0o777)
+    shared.chmod(0o777)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(shared))
+    assert broker.socket_path() is None
+    shared.chmod(0o700)
+    assert broker.socket_path() == str(shared / "btw5-switch.sock")
+
+
+def test_no_safe_socket_dir_falls_back_to_usb(monkeypatch):
+    monkeypatch.setattr(broker, "socket_path", lambda: None)
+    assert isinstance(broker.default_transport(), broker.UsbTransport)

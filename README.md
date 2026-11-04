@@ -1,5 +1,7 @@
 # btw5-switch - control the Creative BT-W5 Bluetooth audio dongle on Linux
 
+[![tests](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml)
+
 Switch aptX Adaptive modes, toggle HFP (headset microphone), scan for, pair and switch between headsets, and get notified when they connect, all without Creative's Windows/macOS app.
 Comes with a command line tool, a system tray icon and a status bar module.
 
@@ -139,8 +141,8 @@ Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB acce
 
 ## Status
 
-Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `auto-hfp`, `disconnect`, `monitor` (including reconnecting after the dongle resets and sharing it with other commands), `waybar` and the tray.
-Not yet confirmed on hardware: `scan` actually listing a headset, `pair` completing a connection (so far the dongle refused because the headset wasn't reachable), `hfp` and `forget`.
+Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `hfp`, `auto-hfp`, `disconnect`, `monitor` (including following the dongle through HFP re-enumeration and sharing it with other commands), `waybar` and the tray.
+Not yet confirmed on hardware: `scan` actually listing a headset, `pair` completing a connection (so far the dongle refused because the headset wasn't reachable), and `forget`.
 If something doesn't behave as expected, run it with `-v` and open an issue with the output.
 
 Based on [RaphaelWimmer/btw5-switch](https://github.com/RaphaelWimmer/btw5-switch). Pull requests welcome.

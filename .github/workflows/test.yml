@@ -1,0 +1,40 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.9", "3.11", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          allow-prereleases: true
+      - run: pip install pytest .
+      - run: python -m pytest -q
+      - name: CLI smoke test
+        run: |
+          btw5-switch --version
+          btw5-switch --help >/dev/null
+          python -m btw5 --help >/dev/null
+
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y --no-install-recommends zsh fish
+      - run: |
+          bash -n completions/btw5-switch.bash
+          zsh -n completions/_btw5-switch
+          fish --no-execute completions/btw5-switch.fish
+          bash -n install-files.sh
+          sh -n install-files.sh

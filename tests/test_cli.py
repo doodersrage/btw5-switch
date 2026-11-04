@@ -127,3 +127,15 @@ def test_scan_reports_auto_connect(capsys, monkeypatch):
     out = run(capsys, "scan", "5")
     assert "connected to X3 (68:00:1a:bc:5c:eb) by itself" in out
     assert "No devices found" not in out
+
+
+def test_raw_rejects_bad_bytes(dongle, capsys):
+    for bad in (["6b", "100"], ["zz"], ["6b", "-1"]):
+        with pytest.raises(SystemExit):
+            cli.main(["raw", *bad])
+    with pytest.raises(SystemExit, match="payload bytes"):
+        cli.main(["raw", "6b"] + ["00"] * 62)
+
+
+def test_scan_zero_seconds_json(dongle, capsys):
+    assert json.loads(run(capsys, "scan", "0", "--json")) == {"found": [], "connected": None}

@@ -13,14 +13,35 @@ import errno
 import os
 import select
 import socket
+import stat
 
 from . import protocol as P
-from .device import Gone, NotFound, UsbTransport
+from .device import BTW5Error, Gone, NotFound, UsbTransport
+
+
+def _private_dir(path):
+    """True if path is a real directory owned by us and closed to others."""
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return False
+    return stat.S_ISDIR(st.st_mode) and st.st_uid == os.getuid() and not st.st_mode & 0o077
 
 
 def socket_path():
-    base = os.environ.get("XDG_RUNTIME_DIR") or f"/tmp/btw5-switch-{os.getuid()}"
-    os.makedirs(base, mode=0o700, exist_ok=True)
+    """Where the broker socket lives, or None if there's no safe place for it."""
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    if not base:
+        # e.g. under sudo. Don't trust a directory someone else may have created.
+        base = f"/tmp/btw5-switch-{os.getuid()}"
+        try:
+            os.mkdir(base, 0o700)
+        except FileExistsError:
+            pass
+        except OSError:
+            return None
+    if not _private_dir(base):
+        return None
     return os.path.join(base, "btw5-switch.sock")
 
 
@@ -32,6 +53,8 @@ class SocketTransport:
         self.sock = None
 
     def open(self):
+        if not self.path:
+            raise NotFound()
         s = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
         try:
             s.connect(self.path)
@@ -66,7 +89,7 @@ class SocketTransport:
 
 def broker_available(path=None):
     path = path or socket_path()
-    if not os.path.exists(path):
+    if not path or not os.path.exists(path):
         return False
     s = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
     try:
@@ -80,7 +103,10 @@ def broker_available(path=None):
 
 def default_transport(busy_wait=3.0):
     """Use a running broker if there is one, otherwise the USB device directly."""
-    return SocketTransport() if broker_available() else UsbTransport(busy_wait=busy_wait)
+    path = socket_path()
+    if path and broker_available(path):
+        return SocketTransport(path)
+    return UsbTransport(busy_wait=busy_wait)
 
 
 class Broker:
@@ -96,6 +122,8 @@ class Broker:
         self.clients = []
 
     def __enter__(self):
+        if not self.path:
+            raise OSError(errno.EACCES, "no private directory for the broker socket")
         if broker_available(self.path):
             raise OSError(errno.EADDRINUSE, f"another btw5-switch is already sharing the dongle ({self.path})")
         try:
@@ -103,8 +131,11 @@ class Broker:
         except FileNotFoundError:
             pass
         self.server = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET)
-        self.server.bind(self.path)
-        os.chmod(self.path, 0o600)
+        old = os.umask(0o177)  # create the socket 0600 (no chmod race)
+        try:
+            self.server.bind(self.path)
+        finally:
+            os.umask(old)
         self.server.listen(8)
         self.server.setblocking(False)
         return self
@@ -132,24 +163,32 @@ class Broker:
             if s is self.server:
                 try:
                     c, _ = self.server.accept()
-                    self.clients.append(c)
                 except BlockingIOError:
-                    pass
+                    continue
+                c.setblocking(False)  # a client that stops reading must not stall everyone
+                self.clients.append(c)
                 continue
             try:
                 data = s.recv(P.REPORT_LEN)
+            except BlockingIOError:
+                continue
             except OSError:
                 data = b""
             if not data:
                 self._drop(s)
-            else:
+                continue
+            try:
                 self.t.write(data)
+            except Gone:
+                raise
+            except BTW5Error:
+                self._drop(s)  # that client's request upset the dongle; keep serving the rest
 
     def broadcast(self, raw):
         for c in list(self.clients):
             try:
                 c.send(raw)
-            except OSError:
+            except OSError:  # incl. BlockingIOError: its queue is full, it isn't reading
                 self._drop(c)
 
     def run(self, on_report=None):

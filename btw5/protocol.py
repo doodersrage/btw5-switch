@@ -77,7 +77,7 @@ def split_report(raw):
     if len(raw) < 4 or raw[0] != REPORT_ID:
         return None, raw
     if raw[1] != MAGIC:
-        return raw[1], raw[2:]  # other report family
+        return None, raw  # some other report family; don't mistake it for a 03 5a frame
     n = raw[3]
     return raw[2], raw[4:4 + n].ljust(n, b"\0")
 
