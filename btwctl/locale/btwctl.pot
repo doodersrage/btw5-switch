@@ -12,12 +12,16 @@ msgstr ""
 msgid "Game mode needs the background service. Turn it on in the BT-W Control window."
 msgstr ""
 
-#: btwctl/tray.py:93
+#: btwctl/tray.py:93 btwctl/tray.py:138
 msgid "aptX Low Latency"
 msgstr ""
 
-#: btwctl/tray.py:93
+#: btwctl/tray.py:93 btwctl/tray.py:138
 msgid "aptX High Quality"
+msgstr ""
+
+#: btwctl/tray.py:98
+msgid "No BT-W dongle plugged in"
 msgstr ""
 
 #: btwctl/tray.py:110
@@ -204,7 +208,7 @@ msgstr ""
 msgid "Put the headset in pairing mode, then scan. Scanning disconnects the current headset. If the dongle finds a headset in pairing mode it often connects to it right away."
 msgstr ""
 
-#: btwctl/window.py:208 btwctl/window.py:646
+#: btwctl/window.py:208 btwctl/window.py:649
 msgid "Scan"
 msgstr ""
 
@@ -321,160 +325,160 @@ msgstr ""
 msgid "The dongle refused (status 0x{status:02x}). Is a compatible headset connected?"
 msgstr ""
 
-#: btwctl/window.py:506
+#: btwctl/window.py:509
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "These settings will be applied whenever {headset} connects."
 msgstr ""
 
-#: btwctl/window.py:510
+#: btwctl/window.py:513
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Settings for {headset} forgotten."
 msgstr ""
 
-#: btwctl/window.py:517
+#: btwctl/window.py:520
 msgid "Game mode on: Low Latency while a game runs."
 msgstr ""
 
-#: btwctl/window.py:517
+#: btwctl/window.py:520
 msgid "Game mode off."
 msgstr ""
 
-#: btwctl/window.py:526
+#: btwctl/window.py:529
 msgid "This needs PipeWire (pw-dump and wpctl aren't installed)."
 msgstr ""
 
-#: btwctl/window.py:528
+#: btwctl/window.py:531
 msgid "Sound will follow the headset."
 msgstr ""
 
-#: btwctl/window.py:528
+#: btwctl/window.py:531
 msgid "Sound won't switch automatically."
 msgstr ""
 
-#: btwctl/window.py:537
+#: btwctl/window.py:540
 msgid "Game list saved."
 msgstr ""
 
-#: btwctl/window.py:548
+#: btwctl/window.py:551
 msgid "Switching to aptX Low Latency"
 msgstr ""
 
-#: btwctl/window.py:548
+#: btwctl/window.py:551
 msgid "Switching to aptX High Quality"
 msgstr ""
 
-#: btwctl/window.py:554
+#: btwctl/window.py:557
 msgid "Turning the headset microphone on"
 msgstr ""
 
-#: btwctl/window.py:554
+#: btwctl/window.py:557
 msgid "Turning the headset microphone off"
 msgstr ""
 
-#: btwctl/window.py:560
+#: btwctl/window.py:563
 msgid "Turning automatic microphone switching on"
 msgstr ""
 
-#: btwctl/window.py:561
+#: btwctl/window.py:564
 msgid "Turning automatic microphone switching off"
-msgstr ""
-
-#: btwctl/window.py:570
-#. Keep the {names} in braces as they are; they're filled in by the program.
-msgid "Connected to {headset}."
-msgstr ""
-
-#: btwctl/window.py:571
-#. Keep the {names} in braces as they are; they're filled in by the program.
-msgid "The dongle can't reach {headset}. Make sure it's on and not connected to another device, or put it in pairing mode and scan."
 msgstr ""
 
 #: btwctl/window.py:573
 #. Keep the {names} in braces as they are; they're filled in by the program.
-msgid "{headset} disconnected again."
+msgid "Connected to {headset}."
 msgstr ""
 
 #: btwctl/window.py:574
 #. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle can't reach {headset}. Make sure it's on and not connected to another device, or put it in pairing mode and scan."
+msgstr ""
+
+#: btwctl/window.py:576
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "{headset} disconnected again."
+msgstr ""
+
+#: btwctl/window.py:577
+#. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "No connection confirmed for {headset} yet."
 msgstr ""
 
-#: btwctl/window.py:580
+#: btwctl/window.py:583
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Connecting to {headset}"
 msgstr ""
 
-#: btwctl/window.py:583
+#: btwctl/window.py:586
 msgid "Disconnecting"
 msgstr ""
 
-#: btwctl/window.py:584
+#: btwctl/window.py:587
 msgid "Disconnected. (The dongle also starts looking for headsets.)"
 msgstr ""
 
-#: btwctl/window.py:589
+#: btwctl/window.py:592
 msgid "Forget all headsets?"
 msgstr ""
 
-#: btwctl/window.py:590
+#: btwctl/window.py:593
 msgid "The dongle will forget every paired headset and reconnect on USB.\nYou'll have to pair your headsets again."
 msgstr ""
 
-#: btwctl/window.py:595
+#: btwctl/window.py:598
 msgid "Forgetting all headsets"
 msgstr ""
 
-#: btwctl/window.py:596
+#: btwctl/window.py:599
 msgid "All headsets forgotten."
 msgstr ""
 
-#: btwctl/window.py:601
+#: btwctl/window.py:604
 msgid "Diagnostics copied to the clipboard."
 msgstr ""
 
-#: btwctl/window.py:602
+#: btwctl/window.py:605
 msgid "Reading every register"
 msgstr ""
 
-#: btwctl/window.py:613
+#: btwctl/window.py:616
 msgid "Disconnect headset?"
 msgstr ""
 
-#: btwctl/window.py:614
+#: btwctl/window.py:617
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Scanning disconnects {headset}. Continue?"
 msgstr ""
 
-#: btwctl/window.py:625
+#: btwctl/window.py:628
 msgid "Stop"
 msgstr ""
 
-#: btwctl/window.py:629
+#: btwctl/window.py:632
 msgid "Scanning… put the headset in pairing mode."
-msgstr ""
-
-#: btwctl/window.py:650
-#. Keep the {names} in braces as they are; they're filled in by the program.
-msgid "Scan failed: {error}"
 msgstr ""
 
 #: btwctl/window.py:653
 #. Keep the {names} in braces as they are; they're filled in by the program.
-msgid "The dongle connected to {headset} by itself."
+msgid "Scan failed: {error}"
 msgstr ""
 
 #: btwctl/window.py:656
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle connected to {headset} by itself."
+msgstr ""
+
+#: btwctl/window.py:659
 msgid "Click Pair while the headset is still in pairing mode."
 msgstr ""
 
-#: btwctl/window.py:658
+#: btwctl/window.py:661
 msgid "No headsets found. Is the headset in pairing mode?"
 msgstr ""
 
-#: btwctl/window.py:677
+#: btwctl/window.py:680
 msgid "Pair"
 msgstr ""
 
-#: btwctl/window.py:715 btwctl/window.py:54 btwctl/window.py:79 btwctl/window.py:325 btwctl/tray.py:27 btwctl/tray.py:75 btwctl/tray.py:52 btwctl/tray.py:110 btwctl/tray.py:55 btwctl/tray.py:113
+#: btwctl/window.py:718 btwctl/window.py:54 btwctl/window.py:79 btwctl/window.py:325 btwctl/tray.py:27 btwctl/tray.py:75 btwctl/tray.py:52 btwctl/tray.py:110 btwctl/tray.py:55 btwctl/tray.py:113
 msgid "BT-W Control"
 msgstr ""

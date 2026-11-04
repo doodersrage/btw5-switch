@@ -14,38 +14,38 @@ import os
 LOCALE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale")
 
 
+def parse_po_entries(text):
+    """(header, entries) from .po text: header is the msgid "" entry's text (or ""),
+    entries a list of {'msgid', 'msgstr', 'fuzzy'} (no plurals or contexts)."""
+    header, entries = "", []
+    for block in text.replace("\r\n", "\n").split("\n\n"):
+        entry, key, fuzzy = {}, None, False
+        for line in block.splitlines():
+            line = line.strip()
+            if line.startswith("#,") and "fuzzy" in line:
+                fuzzy = True
+            if not line or line.startswith("#"):
+                continue
+            for k in ("msgid", "msgstr"):
+                if line.startswith(k + " "):
+                    key = k
+                    entry[k] = ast.literal_eval(line[len(k) + 1:])
+                    break
+            else:
+                if line.startswith('"') and key:
+                    entry[key] += ast.literal_eval(line)
+        if "msgid" not in entry:
+            continue
+        if entry["msgid"] == "" and not header:
+            header = block.strip("\n") + "\n"
+            continue
+        entries.append({"msgid": entry["msgid"], "msgstr": entry.get("msgstr", ""), "fuzzy": fuzzy})
+    return header, entries
+
+
 def parse_po(text):
-    """{msgid: msgstr} from .po file text (no plurals or contexts; fuzzy entries skipped)."""
-    out = {}
-    entry = {}
-    key = None
-    fuzzy = False
-
-    def flush():
-        msgid, msgstr = entry.get("msgid"), entry.get("msgstr")
-        if msgid and msgstr and not fuzzy:
-            out[msgid] = msgstr
-
-    for line in text.splitlines():
-        line = line.strip()
-        if not line:
-            flush()
-            entry, key, fuzzy = {}, None, False
-            continue
-        if line.startswith("#,") and "fuzzy" in line:
-            fuzzy = True
-        if line.startswith("#"):
-            continue
-        for k in ("msgid", "msgstr"):
-            if line.startswith(k + " "):
-                key = k
-                entry[k] = ast.literal_eval(line[len(k) + 1:])
-                break
-        else:
-            if line.startswith('"') and key:
-                entry[key] += ast.literal_eval(line)
-    flush()
-    return out
+    """{msgid: msgstr} of the usable translations (fuzzy and empty ones are left out)."""
+    return {e["msgid"]: e["msgstr"] for e in parse_po_entries(text)[1] if e["msgstr"] and not e["fuzzy"]}
 
 
 def languages(environ=os.environ):

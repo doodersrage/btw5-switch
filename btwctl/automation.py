@@ -21,8 +21,17 @@ from . import protocol as P
 GAME_CHECK_SECONDS = 3.0
 APPLY_DELAY = 2.5        # settle time after a headset connects before changing settings
 APPLY_RETRIES = 4
+QUIET_SECONDS = 3.0      # after sending a setting, its echoes aren't the user's doing
+APTX_QUERY_INTERVAL = 5.0
+QUICK_CHECKS = 3
+RESTORE_TRIES = 6
 AUDIO_DELAY = 1.0        # let PipeWire notice the change first
 AUDIO_RETRIES = 8
+
+
+def game_running(config, proc="/proc"):
+    """Game mode is on and a game is running right now (its Low Latency isn't the user's choice)."""
+    return bool(config.game_mode and running_games(config.game_apps, proc))
 
 
 def running_games(patterns, proc="/proc"):
@@ -69,6 +78,11 @@ class Automation:
         self.next_game_check = 0.0
         self.game = None            # set of running game patterns while game mode is active
         self.saved_mode = None      # aptX mode to restore when the games exit
+        self.restore = None         # [mode, tries]: restore after a game, once aptX is readable
+        self.after_restart = False  # the dongle restarted (HFP change, forget): a user action
+        self.quiet_until = 0.0      # ignore setting reports caused by our own commands until then
+        self.last_aptx_query = -1e9
+        self.quick_checks = 0
 
         if audio is None:
             from .audio import AudioFollower, available
@@ -88,9 +102,20 @@ class Automation:
 
     def set(self, key, value):
         self.send(P.CMD_BT, [P.BT_SET, key, value])
+        # its effect (and stale replies to other programs' queries) shouldn't count as the user's
+        self.quiet_until = self.clock() + QUIET_SECONDS
 
     def query(self, key):
         self.send(P.CMD_BT, [P.BT_GET, key])
+
+    def ask_aptx(self):
+        """Ask for the aptX mode, at most every few seconds (it may never be readable)."""
+        now = self.clock()
+        if now - self.last_aptx_query >= APTX_QUERY_INTERVAL:
+            self.last_aptx_query = now
+            self.query(P.GET_APTX)
+            return True
+        return False
 
     def tell(self, line, notify=True):
         self.say(line)
@@ -99,9 +124,19 @@ class Automation:
 
     # --- input -------------------------------------------------------------
 
+    def dongle_gone(self):
+        """The dongle disappeared (re-enumerating after HFP/forget, or unplugged)."""
+        self.after_restart = True
+        self.link = None           # so sound follows it again once it's back
+        self.connected = None
+        self.pending = None
+        self.hfp = None
+
     def feed(self, cmd, p):
-        """Watch the report stream for headsets connecting and disconnecting."""
+        """Watch the report stream for headsets connecting and settings changing."""
         setting = P.parse_setting(p) if cmd == P.CMD_BT else None
+        if setting:
+            self.adopt_user_change(*setting)
         if setting and setting[0] == P.GET_HFP:
             on = setting[1] == P.HFP_VALUES["on"]
             if on != self.hfp:
@@ -126,15 +161,45 @@ class Automation:
         if state == P.CONN_CONNECTED:
             if not self.connected or self.connected[0] != addr:
                 self.connected = (addr, name)
-                self.pending = [addr, name, self.clock() + APPLY_DELAY, 0]
+                if self.after_restart:
+                    # back after a restart the user caused (e.g. switching HFP): keep their
+                    # settings instead of re-applying the stored ones
+                    self.after_restart = False
+                else:
+                    self.pending = [addr, name, self.clock() + APPLY_DELAY, 0]
                 # the settings we knew belong to the previous link; read them fresh
-                for key in (P.GET_APTX, P.GET_HFP, P.GET_AUTO_HFP):
+                for key in (P.GET_APTX, P.GET_APTX_ACTIVE, P.GET_HFP, P.GET_AUTO_HFP):
                     self.tracker.settings.pop(key, None)
-                self.tracker.settings.pop(P.GET_APTX_ACTIVE, None)
+                self.quick_checks = 0
+                self.next_game_check = min(self.next_game_check, self.clock() + APPLY_DELAY)
         elif state in (P.CONN_DISCONNECTED, P.CONN_NOT_CONNECTED):
             if self.connected and self.connected[0] == addr:
                 self.connected = None
                 self.pending = None
+
+    def adopt_user_change(self, key, value):
+        """A setting changed while a headset with preferences is connected, not by us or by
+        game mode: the user changed it (tray, command line, …), so remember that instead of
+        undoing it at the next connect."""
+        if not self.connected or self.pending or self.clock() < self.quiet_until:
+            return
+        names = {P.GET_APTX: "aptx", P.GET_APTX_ACTIVE: "aptx", P.GET_HFP: "hfp", P.GET_AUTO_HFP: "auto-hfp"}
+        pref = names.get(key)
+        if pref is None or (pref == "aptx" and (self.game or self.restore)):
+            return
+        words = {"aptx": {v: k for k, v in P.APTX.items()},
+                 "hfp": {v: k for k, v in P.HFP_VALUES.items()},
+                 "auto-hfp": {v: k for k, v in P.AUTO_HFP_VALUES.items()}}[pref]
+        if value not in words:
+            return
+        addr, name = self.connected
+        prefs = self.config.preferences(addr)
+        if pref not in prefs or prefs[pref] == words[value]:
+            return
+        self.config.reload_if_changed()
+        self.config.set_preferences(addr, **{pref.replace("-", "_"): words[value]})
+        self.config.save()
+        self.say(f"Remembering {describe_prefs({pref: words[value]})} for {name or P.fmt_addr(addr)}")
 
     def tick(self):
         """Call regularly (every second or more often)."""
@@ -186,7 +251,8 @@ class Automation:
         s = self.tracker.settings
         wanted = dict(prefs)
         if self.game and "aptx" in wanted:
-            # a game is running: Low Latency wins; restore the preference afterwards
+            # a game is running: Low Latency wins (check_games sees to it);
+            # the preference is what comes back afterwards
             self.saved_mode = P.APTX[wanted.pop("aptx")]
         current = {"aptx": self.aptx(), "hfp": s.get(P.GET_HFP), "auto-hfp": s.get(P.GET_AUTO_HFP)}
         unknown = [k for k in wanted if current[k] is None]
@@ -215,30 +281,59 @@ class Automation:
 
     # --- game mode --------------------------------------------------------------------
 
+    def recheck_soon(self):
+        """aptX isn't known yet: look again shortly (a few times), then at the normal pace."""
+        if self.quick_checks < QUICK_CHECKS:
+            self.quick_checks += 1
+            self.next_game_check = self.clock() + 0.5
+
     def check_games(self):
         games = running_games(self.config.game_apps, self.proc) if self.config.game_mode else set()
-        if games and self.game is None:
-            mode = self.aptx()
+        mode = self.aptx()
+        if mode is not None:
+            self.quick_checks = 0
+
+        if games:
+            self.restore = None
+            if self.game is None:
+                if mode is None:
+                    if self.connected:
+                        self.ask_aptx()
+                        self.recheck_soon()
+                    return
+                self.game = games
+                self.saved_mode = mode if mode != P.APTX["ll"] else None
+            else:
+                self.game = games
             if mode is None:
-                if self.connected:
-                    self.query(P.GET_APTX)   # not known yet: ask, and look again shortly
-                    self.next_game_check = self.clock() + 0.5
-                return
-            self.game = games
-            if mode != P.APTX["ll"]:
-                self.saved_mode = mode
+                if self.connected:         # e.g. the headset reconnected during the game
+                    self.ask_aptx()
+                    self.recheck_soon()
+            elif mode != P.APTX["ll"]:
                 self.set(P.SET_APTX, P.APTX["ll"])
                 self.query(P.GET_APTX)
                 self.tell(f"Game running ({', '.join(sorted(games))}): switching to Low Latency")
-            else:
-                self.saved_mode = None
-        elif games:
-            self.game = games
-        elif self.game is not None:
+            return
+
+        if self.game is not None:
             self.game = None
-            restore, self.saved_mode = self.saved_mode, None
+            if self.saved_mode:
+                self.restore = [self.saved_mode, 0]
+            self.saved_mode = None
+        if self.restore:
+            restore, tries = self.restore
+            if mode is None:
+                # not readable right now (e.g. reconnecting): try again a few times
+                if self.connected and tries < RESTORE_TRIES:
+                    self.ask_aptx()
+                    self.restore = [restore, tries + 1]
+                    self.recheck_soon()
+                else:
+                    self.restore = None
+                return
+            self.restore = None
             # only if it's still Low Latency: if the user changed it meanwhile, leave it
-            if restore and self.aptx() == P.APTX["ll"]:
+            if mode == P.APTX["ll"]:
                 self.set(P.SET_APTX, restore)
                 self.query(P.GET_APTX)
                 self.tell(f"Game closed: back to {P.APTX_NAMES[restore]}")

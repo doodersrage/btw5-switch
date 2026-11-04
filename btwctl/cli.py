@@ -354,6 +354,8 @@ def cmd_monitor(args):
                 raise
             time.sleep(1)
         except (Gone, NotFound):
+            if auto["obj"]:
+                auto["obj"].dongle_gone()
             if not args.reconnect:
                 raise
             # Keep the tracked state: HFP changes happen exactly here (the dongle
@@ -435,7 +437,13 @@ def cmd_prefer(args):
             st = read_status(d)
             if not st["headset"] or st["headset"]["address"] != P.fmt_addr(addr):
                 sys.exit("--current needs that headset to be connected.")
-            values = {"aptx": (st["aptx_mode"] or "").lower() or None,
+            from .automation import game_running
+            from .config import Config as _Config
+            # while game mode forces Low Latency, that isn't the headset's real preference
+            gaming = game_running(_Config())
+            if gaming:
+                print("A game is running with game mode on, so the aptX mode isn't remembered.")
+            values = {"aptx": None if gaming else (st["aptx_mode"] or "").lower() or None,
                       "hfp": None if st["hfp"] is None else ("on" if st["hfp"] else "off"),
                       "auto_hfp": None if st["auto_hfp"] is None else ("on" if st["auto_hfp"] else "off")}
 

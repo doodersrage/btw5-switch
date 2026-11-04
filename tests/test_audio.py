@@ -118,6 +118,7 @@ def rig(tmp_path, follow=True):
     def feed(payload):
         t.feed(P.CMD_BT, payload)
         a.feed(P.CMD_BT, payload)
+    feed.automation = a
 
     def run(seconds):
         end = clock["now"] + seconds
@@ -157,3 +158,15 @@ def test_headset_already_off_at_start_moves_audio_away(tmp_path):
     feed(conn_frame(P.CONN_NOT_CONNECTED, HEADSET)[4:])
     run(3)
     assert ("from", "sinks") in rec.calls
+
+
+def test_sound_follows_again_after_a_dongle_restart(tmp_path):
+    """PipeWire moves the default away while the dongle restarts; it has to come back."""
+    feed, run, rec, _ = rig(tmp_path)
+    feed(conn_frame(P.CONN_CONNECTED)[4:])
+    run(3)
+    rec.calls.clear()
+    feed.automation.dongle_gone()
+    feed(conn_frame(P.CONN_CONNECTED)[4:])          # first report after the restart: connected
+    run(3)
+    assert ("to", "sinks") in rec.calls

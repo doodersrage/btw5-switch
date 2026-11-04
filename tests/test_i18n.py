@@ -94,3 +94,37 @@ def test_window_uses_translations(monkeypatch, tmp_path):
         w.shutdown()
         w.deleteLater()
         app.processEvents()
+
+
+def run_tool(tmp_path, monkeypatch, po_text):
+    """Run update-translations against a copy of the locale dir; return the updated file."""
+    import importlib.util
+    tool = os.path.join(os.path.dirname(__file__), "..", "tools", "update-translations.py")
+    spec = importlib.util.spec_from_file_location("upd", tool)
+    upd = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(upd)
+    loc = tmp_path / "locale"
+    loc.mkdir(parents=True)
+    (loc / "xx.po").write_text(po_text, encoding="utf-8")
+    monkeypatch.setattr(upd, "LOCALE", str(loc))
+    monkeypatch.setattr(sys, "argv", ["update-translations.py"])
+    upd.main()
+    return (loc / "xx.po").read_text(encoding="utf-8")
+
+
+def test_update_keeps_fuzzy_drafts(tmp_path, monkeypatch, capsys):
+    out = run_tool(tmp_path, monkeypatch, 'msgid ""\nmsgstr ""\n"Language: xx\\n"\n\n'
+                   '#, fuzzy\nmsgid "Audio"\nmsgstr "Draft"\n')
+    header, entries = i18n.parse_po_entries(out)
+    audio = next(e for e in entries if e["msgid"] == "Audio")
+    assert audio["msgstr"] == "Draft" and audio["fuzzy"]
+    assert "Language: xx" in header
+
+
+def test_update_handles_files_without_locations(tmp_path, monkeypatch, capsys):
+    po = 'msgid ""\nmsgstr ""\n"Language: xx\\n"\n\nmsgid "Audio"\nmsgstr "Áudio"\n'
+    out = run_tool(tmp_path / "first", monkeypatch, po)
+    again = run_tool(tmp_path / "second", monkeypatch, out)      # a second update of the result
+    ids = [e["msgid"] for e in i18n.parse_po_entries(again)[1]]
+    assert len(ids) == len(set(ids))                      # nothing duplicated
+    assert i18n.parse_po(again)["Audio"] == "Áudio"

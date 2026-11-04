@@ -3,6 +3,14 @@
 ## Next (not released yet)
 
 - The tray no longer repeats the background service's "headset connected/disconnected" notifications.
+- Fixes in the background automation (found in a code review):
+  - Changing the microphone (HFP) or aptX mode from the tray or command line is no longer undone by the headset's stored preferences; the preference is updated instead.
+  - Game mode keeps Low Latency when the headset reconnects during a game, and still switches back afterwards.
+  - With a headset that can't do aptX Adaptive, game mode no longer queries the dongle twice a second.
+  - "Remember these settings" and `prefer --current` don't save the Low Latency mode game mode switched to.
+  - Sound follows the headset again after the dongle restarts (e.g. after an HFP change).
+- The Debian package no longer enables the background service for every user.
+- The translation tool keeps translators' fuzzy (draft) entries and handles `.po` files without source references.
 - `man btwctl`.
 - Software centres (KDE Discover, GNOME Software) show BT-W Control with a description and screenshot (AppStream metadata).
 - Releases include a `SHA256SUMS` file to verify downloads.

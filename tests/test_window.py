@@ -220,3 +220,11 @@ def test_tray_leaves_connect_notifications_to_the_service(app, monkeypatch):
         t.on_state(dict(off, service=service_running))
         t.on_state(dict(on, service=service_running))
         assert len(shown) == expect, (service_running, shown)
+
+
+def test_remember_during_a_game_doesnt_store_low_latency(app, make, monkeypatch):
+    from btwctl.config import Config
+    monkeypatch.setattr("btwctl.automation.game_running", lambda config, proc="/proc": True)
+    w = make(FakeDongle(aptx=0x20))                       # game mode forced Low Latency
+    w.remember.click()
+    assert "aptx" not in Config().preferences("ba:52:e9:09:80:c3")

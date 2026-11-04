@@ -23,5 +23,10 @@ override_dh_auto_install:
 	# Debian keeps the license as /usr/share/doc/btwctl/copyright
 	rm -rf $(PKG)/usr/share/licenses
 
+# Don't enable the background service for every user (and the old-name unit is only
+# there so existing per-user setups keep working): users opt in with systemctl --user.
+override_dh_installsystemduser:
+	dh_installsystemduser --no-enable --no-start
+
 override_dh_installchangelogs:
 	dh_installchangelogs CHANGELOG.md

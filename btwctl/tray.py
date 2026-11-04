@@ -95,7 +95,7 @@ class Tray:
     def on_state(self, r):
         if isinstance(r, Exception):
             self.state = None
-            msg = "No BT-W dongle plugged in" if isinstance(r, NotFound) else str(r)
+            msg = tr("No BT-W dongle plugged in") if isinstance(r, NotFound) else str(r)
             if isinstance(r, BTW5Error) and not isinstance(r, NotFound) and "in use" in msg:
                 return  # someone else had it for a moment; keep the last state
             self.icon.setToolTip(msg)
@@ -135,7 +135,7 @@ class Tray:
             m.addSeparator()
 
             group = QActionGroup(m)
-            for mode, label in (("ll", "aptX Low Latency"), ("hq", "aptX High Quality")):
+            for mode, label in (("ll", tr("aptX Low Latency")), ("hq", tr("aptX High Quality"))):
                 a = QAction(label, m, checkable=True)
                 a.setChecked(st["aptx_mode"] == mode.upper())
                 a.setEnabled(st["aptx_mode"] is not None)

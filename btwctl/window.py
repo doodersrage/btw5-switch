@@ -497,10 +497,13 @@ class Window(W.QMainWindow):
         self.config.reload_if_changed()
         label = h["name"] or h["address"]
         if on:
+            from .automation import game_running
             st = self.state
+            # while game mode forces Low Latency, that isn't the headset's real preference
+            gaming = game_running(self.config)
             self.config.set_preferences(
                 h["address"], name=h["name"],
-                aptx=(st["aptx_mode"] or "").lower() or None,
+                aptx=None if gaming else (st["aptx_mode"] or "").lower() or None,
                 hfp=None if st["hfp"] is None else ("on" if st["hfp"] else "off"),
                 auto_hfp=None if st["auto_hfp"] is None else ("on" if st["auto_hfp"] else "off"))
             self.say(tr("These settings will be applied whenever {headset} connects.").format(headset=label),

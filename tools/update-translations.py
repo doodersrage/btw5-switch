@@ -17,7 +17,7 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SOURCES = ["btwctl/window.py", "btwctl/tray.py"]
 LOCALE = os.path.join(ROOT, "btwctl", "locale")
 sys.path.insert(0, ROOT)
-from btwctl.i18n import parse_po  # noqa: E402
+from btwctl.i18n import parse_po_entries  # noqa: E402
 
 
 def extract():
@@ -37,6 +37,7 @@ def quote(s):
 
 
 def render(messages, translations=None, header=None):
+    """translations: {msgid: (msgstr, fuzzy)}; fuzzy entries stay fuzzy (a translator's draft)."""
     out = [header or '''# Translations of BT-W Control (btwctl). See CONTRIBUTING-translations.md.
 msgid ""
 msgstr ""
@@ -46,16 +47,13 @@ msgstr ""
         out.append(f"#: {' '.join(refs)}")
         if "{" in msgid:
             out.append("#. Keep the {names} in braces as they are; they're filled in by the program.")
+        msgstr, fuzzy = (translations or {}).get(msgid, ("", False))
+        if fuzzy:
+            out.append("#, fuzzy")
         out.append(f"msgid {quote(msgid)}")
-        out.append(f"msgstr {quote((translations or {}).get(msgid, ''))}")
+        out.append(f"msgstr {quote(msgstr)}")
         out.append("")
     return "\n".join(out)
-
-
-def po_header(text):
-    """Everything before the first real entry (keeps the translator's header block)."""
-    head, _, _ = text.partition("\n#: ")
-    return head.rstrip("\n") + "\n"
 
 
 def main():
@@ -76,9 +74,10 @@ def main():
     open(pot_path, "w", encoding="utf-8").write(pot)
     for po in sorted(glob.glob(os.path.join(LOCALE, "*.po"))):
         text = open(po, encoding="utf-8").read()
-        done = parse_po(text)
-        open(po, "w", encoding="utf-8").write(render(messages, done, po_header(text)))
-        have = sum(1 for m, _ in messages if done.get(m))
+        header, entries = parse_po_entries(text)
+        done = {e["msgid"]: (e["msgstr"], e["fuzzy"]) for e in entries if e["msgstr"]}
+        open(po, "w", encoding="utf-8").write(render(messages, done, header or None))
+        have = sum(1 for m, _ in messages if m in done and not done[m][1])
         print(f"{os.path.basename(po)}: {have}/{len(messages)} translated")
     print(f"btwctl.pot: {len(messages)} messages")
 

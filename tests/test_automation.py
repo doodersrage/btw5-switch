@@ -166,3 +166,70 @@ def test_game_beats_headset_preference_then_restores_it(cfg, tmp_path):
     r.games()
     r.run(4)
     assert r.values[P.GET_APTX] == 0x40          # then the headset's preference
+
+
+# --- regressions found in review ------------------------------------------------------
+
+def test_hfp_change_from_the_tray_is_kept_not_undone(cfg, tmp_path):
+    """Switching HFP restarts the dongle; the stored preference used to switch it straight back."""
+    cfg.set_preferences(HEADSET, name="MOMENTUM 4", hfp="off")
+    r = Rig(cfg, tmp_path, hfp=0x02)
+    r.connect()
+    r.run(6)
+    assert r.sets() == []                                 # already as preferred
+    r.values[P.GET_HFP] = 0x01                            # user: 'btwctl hfp on' -> dongle restarts
+    r.a.dongle_gone()
+    r.report(conn_frame(P.CONN_NOT_CONNECTED)[4:])
+    r.connect()
+    r.report([P.BT_GET, P.GET_HFP, 0x01])
+    r.run(8)
+    assert r.sets() == []                                 # not switched back off
+    assert Config(cfg.path).preferences(HEADSET)["hfp"] == "on"   # and remembered
+
+
+def test_aptx_change_from_the_command_line_is_remembered(cfg, tmp_path):
+    cfg.set_preferences(HEADSET, aptx="hq")
+    r = Rig(cfg, tmp_path, aptx=0x40)
+    r.connect()
+    r.run(6)
+    r.now += 5                                            # well after our own commands
+    r.report([P.BT_GET, P.GET_APTX_ACTIVE, 0x20])         # user: 'btwctl ll'
+    assert Config(cfg.path).preferences(HEADSET)["aptx"] == "ll"
+
+
+def test_game_mode_survives_a_reconnect_during_the_game(cfg, tmp_path):
+    cfg.game_mode = True
+    r = Rig(cfg, tmp_path, aptx=0x40)
+    r.connect()
+    r.run(4)
+    r.games("reaper SteamLaunch AppId=1")
+    r.run(4)
+    assert r.values[P.GET_APTX] == 0x20
+    r.report(conn_frame(P.CONN_DISCONNECTED)[4:])         # headset drops out mid-game ...
+    r.values[P.GET_APTX] = 0x40                           # ... and comes back in High Quality
+    r.connect()
+    r.run(8)
+    assert r.values[P.GET_APTX] == 0x20                   # Low Latency again
+    r.games()
+    r.run(8)
+    assert r.values[P.GET_APTX] == 0x40                   # and High Quality after the game
+
+
+def test_no_endless_polling_with_a_headset_without_aptx(cfg, tmp_path):
+    cfg.game_mode = True
+    r = Rig(cfg, tmp_path)
+    r.send = lambda cmd, payload: r.sent.append(bytes(payload))   # aptX never answers
+    r.a.send = r.send
+    r.connect()
+    r.games("reaper SteamLaunch AppId=1")
+    r.run(30)
+    queries = [p for p in r.sent if p == bytes([P.BT_GET, P.GET_APTX])]
+    assert len(queries) <= 30 / 5 + 2, len(queries)
+
+
+def test_game_running_helper(cfg, tmp_path):
+    from btwctl.automation import game_running
+    proc = fake_proc(tmp_path, "reaper SteamLaunch AppId=1")
+    assert not game_running(cfg, proc)                    # game mode off
+    cfg.game_mode = True
+    assert game_running(cfg, proc)
