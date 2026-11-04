@@ -51,6 +51,19 @@ class Tray:
             QTimer.singleShot(refresh_after_ms, self.refresh)
         self.worker.with_device(fn, done)
 
+    def config(self):
+        from .config import Config
+        return Config()
+
+    def set_game_mode(self, on):
+        cfg = self.config()
+        cfg.game_mode = on
+        cfg.save()
+        from . import service
+        if on and service.is_active() is False:
+            self.icon.showMessage("BT-W5", "Game mode needs the background service. Turn it on in the "
+                                  "BT-W5 Switch window.", QSystemTrayIcon.MessageIcon.Information, 8000)
+
     def open_window(self):
         from .window import Window
         if self.window is None:
@@ -129,6 +142,13 @@ class Tray:
             a.setEnabled(st["auto_hfp"] is not None)
             a.triggered.connect(lambda on: self.act(
                 "auto HFP", lambda d: d.set(P.SET_AUTO_HFP, P.AUTO_HFP_VALUES["on" if on else "off"])))
+            m.addAction(a)
+            m.addSeparator()
+
+            a = QAction("Low Latency while gaming", m, checkable=True)
+            a.setChecked(self.config().game_mode)
+            a.setToolTip("Applied by the background service")
+            a.triggered.connect(self.set_game_mode)
             m.addAction(a)
             m.addSeparator()
 

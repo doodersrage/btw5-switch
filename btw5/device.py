@@ -8,6 +8,35 @@ from . import protocol as P
 
 VENDOR_ID = 0x041e   # Creative Technology
 PRODUCT_ID = 0x3130  # BT-W5
+
+
+def use_device(spec):
+    """Talk to another USB ID ('041e:3132'), e.g. to try a different Creative dongle."""
+    global VENDOR_ID, PRODUCT_ID
+    try:
+        vid, pid = (int(x, 16) for x in spec.split(":"))
+    except ValueError:
+        raise BTW5Error(f"--device must look like 041e:3130, not '{spec}'") from None
+    VENDOR_ID, PRODUCT_ID = vid, pid
+
+
+def other_creative_devices():
+    """[(product id, name)] of plugged-in Creative USB devices that aren't the selected one."""
+    try:
+        usb = _usb()
+        devs = list(usb.core.find(find_all=True, idVendor=0x041e))
+    except Exception:
+        return []
+    out = []
+    for d in devs:
+        if d.idProduct == PRODUCT_ID:
+            continue
+        try:
+            name = d.product
+        except Exception:  # no permission to read strings, or the device didn't answer
+            name = None
+        out.append((d.idProduct, name or "unknown Creative device"))
+    return out
 HID_INTERFACE = 0
 EP_IN = 0x81
 
@@ -19,8 +48,21 @@ class BTW5Error(Exception):
 
 
 class NotFound(BTW5Error):
-    def __init__(self):
-        super().__init__("Creative BT-W5 not found. Is it plugged in? (check with: lsusb -d 041e:3130)")
+    def __init__(self, look_for_others=False):
+        """look_for_others: mention other Creative USB devices (only after a real USB lookup)."""
+        if (VENDOR_ID, PRODUCT_ID) != (0x041e, 0x3130):
+            super().__init__(f"No USB device {VENDOR_ID:04x}:{PRODUCT_ID:04x} found.")
+            return
+        msg = "Creative BT-W5 not found. Is it plugged in? (check with: lsusb -d 041e:3130)"
+        others = other_creative_devices() if look_for_others else []
+        if others:
+            msg += "\n\nFound other Creative devices:\n" + "\n".join(
+                f"  041e:{pid:04x}  {name}" for pid, name in others)
+            msg += ("\nIf one of them is a BT-W series Bluetooth dongle, it may speak the same protocol."
+                    "\nTry it with:   btw5-switch --device 041e:XXXX status"
+                    "\nand please open an issue with the output of:   btw5-switch --device 041e:XXXX dump"
+                    "\nhttps://github.com/doodersrage/btw5-switch/issues")
+        super().__init__(msg)
 
 
 class PermissionDenied(BTW5Error):
@@ -90,7 +132,7 @@ class UsbTransport:
         usb = self.usb
         self.dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
         if self.dev is None:
-            raise NotFound()
+            raise NotFound(look_for_others=True)
         deadline = time.monotonic() + self.busy_wait
         try:
             while True:

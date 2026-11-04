@@ -22,6 +22,8 @@ _btw5-switch() {
         'disconnect:disconnect the current headset'
         'pair:connect to a headset by address or paired name'
         'paired:list the remembered headsets'
+        'prefer:settings to apply whenever a headset connects'
+        'game-mode:Low Latency while a game runs'
         'forget:forget all paired headsets'
         'monitor:print connection and setting changes as they happen'
         'waybar:print status as JSON for a status bar'
@@ -33,6 +35,8 @@ _btw5-switch() {
         '(-v --verbose)'{-v,--verbose}'[hex-dump USB traffic]' \
         '(- *)'{-h,--help}'[show help]' \
         '(- *)'{-V,--version}'[show version]' \
+        '--notify[show the result as a desktop notification]' \
+        '--device[USB ID of the dongle]:VID\:PID:' \
         '1:command:->command' \
         '*::arg:->args'
     case $state in
@@ -44,9 +48,15 @@ _btw5-switch() {
                 scan) _arguments '--json[machine-readable output]' '1:seconds:' ;;
                 hfp|auto-hfp) _arguments '1:state:(on off)' ;;
                 pair) _arguments '--timeout[seconds to wait]:seconds:' '1:headset:_btw5_paired_names' ;;
+                prefer) _arguments '--aptx[aptX mode]:mode:(hq ll)' '--hfp[microphone]:state:(on off)' \
+                                   '--auto-hfp[auto mic switching]:state:(on off)' '--current[remember current settings]' \
+                                   '--clear[forget preferences]' '--json[machine-readable output]' \
+                                   '1:headset:{_btw5_paired_names; compadd current}' ;;
+                game-mode) _arguments '1:action:(status on off add remove)' '2:pattern:' ;;
                 forget) _arguments '(-y --yes)'{-y,--yes}'[do not ask]' ;;
                 monitor) _arguments '--notify[desktop notifications]' '--all[print every report]' \
-                                    '--no-reconnect[exit when the dongle disappears]' ;;
+                                    '--no-reconnect[exit when the dongle disappears]' \
+                                    '--no-automation[do not apply preferences or game mode]' ;;
                 waybar|tray) _arguments '--interval[seconds]:seconds:' ;;
                 raw) _arguments '--listen[seconds to print replies]:seconds:' '*:hex byte:' ;;
             esac ;;

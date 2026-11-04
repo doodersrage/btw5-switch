@@ -36,6 +36,10 @@ class Demo(FakeDongle):
             return
         super().write(data)
 
+import tempfile
+os.environ["XDG_CONFIG_HOME"] = tempfile.mkdtemp()   # a clean config, not yours
+import btw5.service
+btw5.service.is_active = lambda: True
 import btw5.broker
 btw5.broker.default_transport = lambda *a, **k: Demo()
 app = QtWidgets.QApplication([]); app.setDesktopFileName("btw5-switch")

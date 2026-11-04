@@ -1,0 +1,4 @@
+# Raphael Wimmer's capture and screenshot (no license yet) stay out of release
+# tarballs; the tests that need the capture skip themselves without it.
+bt-w5.pcapng        export-ignore
+btw5-wireshark.png  export-ignore

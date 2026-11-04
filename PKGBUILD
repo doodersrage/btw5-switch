@@ -1,7 +1,7 @@
 # Builds the package from this source checkout:  makepkg -si
 # (aur/PKGBUILD is the release version that downloads a tagged tarball.)
 pkgname=btw5-switch
-pkgver=0.5
+pkgver=0.6
 pkgrel=1
 pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
 arch=('any')
@@ -17,6 +17,7 @@ install=btw5-switch.install
 
 build() {
   cd "$startdir"
+  rm -rf "$srcdir/dist"   # no stale wheels from earlier versions
   /usr/bin/python -m build --wheel --no-isolation --outdir "$srcdir/dist"
 }
 

@@ -5,7 +5,7 @@
 #   2. set pkgver below, run `updpkgsums` and `makepkg --printsrcinfo > .SRCINFO`
 #   3. copy PKGBUILD, .SRCINFO and btw5-switch.install into the AUR git repo and push
 pkgname=btw5-switch
-pkgver=0.5
+pkgver=0.6
 pkgrel=1
 pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
 arch=('any')

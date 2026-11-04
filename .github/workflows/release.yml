@@ -1,0 +1,56 @@
+name: release
+
+# Push a tag like v0.6 to publish a GitHub release with .deb and .rpm packages.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: packaging/build-deb.sh dist
+      - uses: actions/upload-artifact@v4
+        with: {name: deb, path: dist/*.deb}
+
+  rpm:
+    runs-on: ubuntu-latest
+    container: fedora:latest
+    steps:
+      - run: dnf install -y git rpm-build python3-devel systemd-rpm-macros
+      - uses: actions/checkout@v5
+      - run: packaging/build-rpm.sh dist
+      - uses: actions/upload-artifact@v4
+        with: {name: rpm, path: dist/*.rpm}
+
+  release:
+    needs: [deb, rpm]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with: {path: dist, merge-multiple: true}
+      - name: Check the tag matches the version
+        run: |
+          v=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' btw5/__init__.py)
+          test "v$v" = "$GITHUB_REF_NAME"
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" '$0 == "## " v {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
+          cat >> notes.md <<'MD'
+
+          ### Install
+          - **Arch Linux**: from the AUR (`btw5-switch`), or `makepkg -si` in a checkout
+          - **Debian / Ubuntu**: download the `.deb` below, then `sudo apt install ./btw5-switch_*_all.deb`
+          - **Fedora**: download the `.rpm` below, then `sudo dnf install ./btw5-switch-*.noarch.rpm`
+          - **Others**: see the [README](https://github.com/doodersrage/btw5-switch#install)
+
+          Then unplug the BT-W5 and plug it back in.
+          MD
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --title "btw5-switch ${GITHUB_REF_NAME#v}" --notes-file notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}

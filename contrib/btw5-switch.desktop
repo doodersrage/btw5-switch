@@ -9,3 +9,20 @@ Terminal=false
 Categories=Settings;HardwareSettings;
 Keywords=bluetooth;aptx;headset;creative;pairing;
 StartupNotify=true
+Actions=low-latency;high-quality;toggle;tray;
+
+[Desktop Action low-latency]
+Name=aptX Low Latency
+Exec=btw5-switch --notify ll
+
+[Desktop Action high-quality]
+Name=aptX High Quality
+Exec=btw5-switch --notify hq
+
+[Desktop Action toggle]
+Name=Toggle Low Latency / High Quality
+Exec=btw5-switch --notify toggle
+
+[Desktop Action tray]
+Name=Show tray icon
+Exec=btw5-switch tray

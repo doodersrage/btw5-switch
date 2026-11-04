@@ -9,6 +9,8 @@ import sys
 import threading
 
 from . import protocol as P
+from . import service
+from .config import Config
 from .device import Busy, NotFound, read_dump
 from .qt import QtCore, QtGui, QtWidgets, Signal, Worker, run_app, snapshot, theme_icon
 
@@ -41,6 +43,7 @@ class Window(W.QMainWindow):
         self.own_worker = worker is None
         self.standalone = standalone
         self.state = None
+        self.config = Config()
         self.info_loaded = False
         self.scanning = False
         self.closed = False
@@ -105,6 +108,18 @@ class Window(W.QMainWindow):
         row.addWidget(close, 0, Qt.AlignmentFlag.AlignTop)
         self.banner.hide()
         root.addWidget(self.banner)
+
+        # the sections scroll (header and messages stay put), so it fits small screens
+        content = W.QWidget()
+        sections = W.QVBoxLayout(content)
+        sections.setContentsMargins(0, 0, 0, 0)
+        sections.setSpacing(12)
+        self.scroll = W.QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(W.QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setWidget(content)
+        root.addWidget(self.scroll, 1)
         self.banner_timer = QtCore.QTimer(self)
         self.banner_timer.setSingleShot(True)
         self.banner_timer.timeout.connect(self.banner.hide)
@@ -132,7 +147,33 @@ class Window(W.QMainWindow):
         self.auto_hfp = W.QCheckBox("Switch to the microphone automatically when an app uses it")
         self.auto_hfp.clicked.connect(self.set_auto_hfp)
         form.addRow(self.auto_hfp)
-        root.addWidget(self.audio)
+        self.remember = W.QCheckBox("Use these settings whenever this headset connects")
+        self.remember.setToolTip("Saved per headset and applied by the background service")
+        self.remember.clicked.connect(self.set_remember)
+        form.addRow(self.remember)
+        sections.addWidget(self.audio)
+
+        # automation
+        self.automation = W.QGroupBox("Automation")
+        form = W.QFormLayout(self.automation)
+        self.game_mode = W.QCheckBox("Use Low Latency while a game is running, then switch back")
+        self.game_mode.clicked.connect(self.set_game_mode)
+        form.addRow(self.game_mode)
+        self.game_apps = W.QLineEdit()
+        self.game_apps.setToolTip("A process counts as a game if its command line contains one of these "
+                                  "(comma-separated, case doesn't matter)")
+        self.game_apps.editingFinished.connect(self.set_game_apps)
+        form.addRow("Games:", self.game_apps)
+        row = W.QHBoxLayout()
+        self.service_label = W.QLabel()
+        self.service_label.setWordWrap(True)
+        self.service_btn = W.QPushButton("Start background service")
+        self.service_btn.setToolTip(f"Runs: {service.ENABLE_CMD}")
+        self.service_btn.clicked.connect(self.start_service)
+        row.addWidget(self.service_label, 1)
+        row.addWidget(self.service_btn)
+        form.addRow(row)
+        sections.addWidget(self.automation)
 
         # paired headsets
         self.paired = W.QGroupBox("Paired headsets")
@@ -149,7 +190,7 @@ class Window(W.QMainWindow):
         row.addStretch()
         row.addWidget(self.forget_btn)
         box.addLayout(row)
-        root.addWidget(self.paired)
+        sections.addWidget(self.paired)
 
         # pairing a new headset
         self.pairing = W.QGroupBox("Pair a new headset")
@@ -172,9 +213,10 @@ class Window(W.QMainWindow):
         row.addWidget(self.scan_progress, 1)
         box.addLayout(row)
         self.found = self.make_table(["Headset", "Address", "Signal", ""], 0)
-        self.found.setMinimumHeight(110)
+        self.fit_rows(self.found, 4)
+        self.found.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         box.addWidget(self.found)
-        root.addWidget(self.pairing, 1)
+        sections.addWidget(self.pairing)
 
         # device info
         self.device = W.QGroupBox("Dongle")
@@ -192,12 +234,25 @@ class Window(W.QMainWindow):
         row.addWidget(self.diag_btn)
         row.addStretch()
         form.addRow("", row)
-        root.addWidget(self.device)
+        sections.addWidget(self.device)
+        sections.addStretch(1)
 
         self.scan_timer = QtCore.QElapsedTimer()
         self.scan_tick = QtCore.QTimer(self)
         self.scan_tick.timeout.connect(self.update_scan_progress)
-        self.resize(560, 760)
+        self.fit_to_screen()
+
+    def fit_to_screen(self):
+        """Open showing everything if it fits, else at most 90% of the screen height."""
+        content = self.scroll.widget()
+        want_h = (self.sizeHint().height() - self.scroll.sizeHint().height()
+                  + content.sizeHint().height() + 8)
+        want_w = max(560, content.sizeHint().width() + self.scroll.verticalScrollBar().sizeHint().width() + 24)
+        screen = self.screen() or W.QApplication.primaryScreen()
+        avail = screen.availableGeometry() if screen else None
+        if avail is not None:
+            want_h = min(want_h, int(avail.height() * 0.9))
+        self.resize(want_w, want_h)
 
     @staticmethod
     def fit_rows(table, rows):
@@ -228,7 +283,11 @@ class Window(W.QMainWindow):
             return
         if with_info is None:
             with_info = not self.info_loaded
-        self.worker.run(lambda: snapshot(with_info=with_info), self.on_state)
+        def job():
+            st = snapshot(with_info=with_info)
+            st["service"] = service.is_active()
+            return st
+        self.worker.run(job, self.on_state)
 
     def auto_refresh(self):
         if self.isVisible() and not self.worker.busy:
@@ -275,6 +334,7 @@ class Window(W.QMainWindow):
         self.hfp.setChecked(bool(r["hfp"]))
         self.auto_hfp.setChecked(bool(r["auto_hfp"]))
         self.fill_slots(r)
+        self.fill_automation(r)
         self.update_enabled()
         self.state_changed.emit(r)
 
@@ -301,6 +361,29 @@ class Window(W.QMainWindow):
                 btn.clicked.connect(lambda _=False, a=s["address"], n=s["name"] or addr: self.connect_to(a, n))
                 self.slots.setCellWidget(row, 2, btn)
 
+    def fill_automation(self, r):
+        self.config.reload_if_changed()
+        h = r["headset"]
+        if h:
+            self.remember.setText(f"Use these settings whenever {h['name'] or h['address']} connects")
+            self.remember.setChecked(bool(self.config.preferences(h["address"])))
+        else:
+            self.remember.setText("Use these settings whenever this headset connects")
+            self.remember.setChecked(False)
+        self.game_mode.setChecked(self.config.game_mode)
+        if not self.game_apps.hasFocus():
+            self.game_apps.setText(", ".join(self.config.game_apps))
+        running = r.get("service")
+        self.service_btn.setVisible(running is False)
+        if running:
+            self.service_label.setText("✓ Background service running: it applies these automatically.")
+        elif running is False:
+            self.service_label.setText("The background service isn't running. Headset settings and "
+                                       "game mode only work while it runs.")
+        else:
+            self.service_label.setText("Headset settings and game mode are applied by "
+                                       "'btw5-switch monitor'; keep it running.")
+
     def update_enabled(self):
         ok = self.state is not None
         idle = not self.worker.busy
@@ -314,6 +397,7 @@ class Window(W.QMainWindow):
         self.disconnect_btn.setEnabled(idle and h)
         self.forget_btn.setEnabled(idle and ok)
         self.diag_btn.setEnabled(idle and ok)
+        self.remember.setEnabled(idle and h)
         self.refresh_btn.setEnabled(idle)
         # while scanning the button is "Stop"; the Pair buttons stop the scan and connect
         self.scan_btn.setEnabled(self.scanning or (idle and ok))
@@ -371,17 +455,71 @@ class Window(W.QMainWindow):
         self.worker.with_device(fn, finished)
         self.update_enabled()
 
+    # --- remembered settings and game mode (config file; the background service applies them)
+
+    def save_preference(self, **values):
+        """If 'remember' is on for the connected headset, keep its preferences in step."""
+        h = self.state and self.state["headset"]
+        if h and self.remember.isChecked():
+            self.config.reload_if_changed()
+            self.config.set_preferences(h["address"], name=h["name"], **values)
+            self.config.save()
+
+    def set_remember(self, on):
+        h = self.state and self.state["headset"]
+        if not h:
+            return
+        self.config.reload_if_changed()
+        label = h["name"] or h["address"]
+        if on:
+            st = self.state
+            self.config.set_preferences(
+                h["address"], name=h["name"],
+                aptx=(st["aptx_mode"] or "").lower() or None,
+                hfp=None if st["hfp"] is None else ("on" if st["hfp"] else "off"),
+                auto_hfp=None if st["auto_hfp"] is None else ("on" if st["auto_hfp"] else "off"))
+            self.say(f"These settings will be applied whenever {label} connects.", kind="ok")
+        else:
+            self.config.clear_preferences(h["address"])
+            self.say(f"Settings for {label} forgotten.")
+        self.config.save()
+
+    def set_game_mode(self, on):
+        self.config.reload_if_changed()
+        self.config.game_mode = on
+        self.config.save()
+        self.say("Game mode on: Low Latency while a game runs." if on else "Game mode off.",
+                 kind="ok" if on else "info")
+
+    def set_game_apps(self):
+        apps = [a.strip() for a in self.game_apps.text().split(",") if a.strip()]
+        self.config.reload_if_changed()
+        if apps != self.config.game_apps:
+            self.config.game_apps = apps
+            self.config.save()
+            self.say("Game list saved.", kind="ok")
+
+    def start_service(self):
+        def done(r):
+            ok, msg = r if not isinstance(r, Exception) else (False, str(r))
+            self.say(msg, 10000 if ok else 20000, "ok" if ok else "error")
+            QtCore.QTimer.singleShot(1500, self.refresh)
+        self.worker.run(service.enable, done)
+
     def set_aptx(self, mode):
+        self.save_preference(aptx=mode)
         self.act(f"Switching to aptX {P.APTX_NAMES[P.APTX[mode]]}",
                  lambda d: d.set(P.SET_APTX, P.APTX[mode]))
 
     def set_hfp(self, on):
+        self.save_preference(hfp="on" if on else "off")
         # the dongle re-enumerates: refresh once it's back
         self.act(f"Turning the headset microphone {'on' if on else 'off'}",
                  lambda d: d.set(P.SET_HFP, P.HFP_VALUES["on" if on else "off"]),
                  refresh_after=(4000, 8000, 12000))
 
     def set_auto_hfp(self, on):
+        self.save_preference(auto_hfp="on" if on else "off")
         self.act(f"Turning automatic microphone switching {'on' if on else 'off'}",
                  lambda d: d.set(P.SET_AUTO_HFP, P.AUTO_HFP_VALUES["on" if on else "off"]))
 

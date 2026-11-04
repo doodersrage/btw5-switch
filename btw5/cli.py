@@ -3,6 +3,7 @@
 import argparse
 import errno
 import json
+import os
 import shutil
 import signal
 import subprocess
@@ -249,12 +250,18 @@ def cmd_monitor(args):
         print(f"{time.strftime('%H:%M:%S')}  {line}", flush=True)
 
     tracker = P.ChangeTracker()
+    # One Automation for the whole run (it remembers game mode across dongle restarts);
+    # "on" is set only while we own the dongle, so two monitors never both act.
+    auto = {"obj": None, "on": None}
 
     def handle(c, p):
         if args.all:
             say(P.describe_event(c, p) or (f"cmd {c:02x}: {P.hexs(p)}" if c is not None else P.hexs(p)))
-            return
         change = tracker.feed(c, p)
+        if auto["on"]:
+            auto["on"].feed(c, p)
+        if args.all:
+            return
         if change:
             say(change[0])
             if args.notify and change[1]:
@@ -264,8 +271,28 @@ def cmd_monitor(args):
         for cmd, payload in P.STATE_QUERIES:
             send(P.build_report(cmd, payload))
 
+    def start_automation(t):
+        """Only the process that owns the dongle automates, so two monitors never both act."""
+        if not args.automation:
+            return
+        from .automation import Automation
+        from .config import Config
+
+        def send(cmd, payload):
+            t.write(P.build_report(cmd, payload))
+        if auto["obj"] is None:
+            auto["obj"] = Automation(Config(), tracker, send=send, say=say,
+                                     notify=notify if args.notify else None)
+        auto["obj"].send = send
+        auto["on"] = auto["obj"]
+
+    def tick():
+        if auto["on"]:
+            auto["on"].tick()
+
     def own(t, path):
         """We hold the dongle: share it (if we can) and watch it until it goes away."""
+        start_automation(t)
         try:
             b = Broker(t, path)
             b.__enter__()
@@ -275,14 +302,17 @@ def cmd_monitor(args):
             say(f"not sharing the dongle ({e.strerror}); other btw5-switch commands will report it busy")
             ask_state(t.write)
             while True:
-                if raw := t.read(1000):
+                if raw := t.read(500):
                     handle(*P.split_report(raw))
+                tick()
+        # (unreachable: the loop above only ends with an exception)
         try:
             if args.verbose:
                 say(f"sharing the dongle on {path}")
             ask_state(t.write)
-            b.run(lambda raw: handle(*P.split_report(raw)))
+            b.run(lambda raw: handle(*P.split_report(raw)), on_idle=tick)
         finally:
+            auto["on"] = None
             b.__exit__(None, None, None)
 
     print("Watching dongle events (Ctrl-C to stop)...", file=sys.stderr)
@@ -292,6 +322,7 @@ def cmd_monitor(args):
             path = socket_path()
             if path and broker_available(path):
                 # Someone else owns the dongle and shares it: just listen along.
+                auto["on"] = None
                 with BTW5(transport=SocketTransport(path), verbose=args.verbose) as d:
                     if away:
                         say("dongle back")
@@ -362,6 +393,89 @@ def cmd_waybar(args):
         time.sleep(args.interval)
 
 
+# --- automation settings (applied by the background service) ---------------------
+
+def service_hint():
+    from . import service
+    if service.is_active() is False:
+        print(f"\nNote: these are applied by the background service, which isn't running.\n"
+              f"Start it with:  {service.ENABLE_CMD}")
+
+
+def cmd_prefer(args):
+    from .config import Config
+    cfg = Config()
+    if not args.headset:
+        prefs = cfg.all_preferences()
+        if args.json:
+            return emit_json([{"address": a, "name": n, **p} for a, n, p in prefs])
+        if not prefs:
+            print("No headset preferences yet. Example:  btw5-switch prefer momentum --aptx hq --hfp off")
+        for addr, name, p in prefs:
+            print(f"  {name or addr}  ({addr}):  " + (", ".join(f"{k} {v}" for k, v in p.items()) or "nothing"))
+        return
+
+    with BTW5(verbose=args.verbose) as d:
+        if args.headset == "current":
+            conn = d.connection()
+            if not conn or conn[0] != P.CONN_CONNECTED:
+                sys.exit("No headset is connected.")
+            addr, name = conn[1], conn[2]
+        else:
+            addr = resolve_headset(d, args.headset)
+            name = next((n for _, a, n in d.slots() if a == addr), "")
+        values = {"aptx": args.aptx, "hfp": args.hfp, "auto_hfp": args.auto_hfp}
+        if args.current:
+            st = read_status(d)
+            if not st["headset"] or st["headset"]["address"] != P.fmt_addr(addr):
+                sys.exit("--current needs that headset to be connected.")
+            values = {"aptx": (st["aptx_mode"] or "").lower() or None,
+                      "hfp": None if st["hfp"] is None else ("on" if st["hfp"] else "off"),
+                      "auto_hfp": None if st["auto_hfp"] is None else ("on" if st["auto_hfp"] else "off")}
+
+    label = name or P.fmt_addr(addr)
+    if args.clear:
+        cfg.clear_preferences(addr)
+        cfg.save()
+        print(f"Cleared the preferences for {label}.")
+        return
+    if not any(v is not None for v in values.values()):
+        p = cfg.preferences(addr)
+        print(f"{label}: " + (", ".join(f"{k} {v}" for k, v in p.items()) if p else "no preferences"))
+        return
+    cfg.set_preferences(addr, name=name, **values)
+    cfg.save()
+    p = cfg.preferences(addr)
+    print(f"Whenever {label} connects: " + ", ".join(f"{k} {v}" for k, v in p.items()))
+    service_hint()
+
+
+def cmd_game_mode(args):
+    from .automation import running_games
+    from .config import Config
+    cfg = Config()
+    if args.action in ("on", "off"):
+        cfg.game_mode = args.action == "on"
+    elif args.action == "add":
+        if not args.pattern:
+            sys.exit("Usage: btw5-switch game-mode add <part of a game's command line>")
+        cfg.game_apps = cfg.game_apps + [args.pattern]
+    elif args.action == "remove":
+        apps = cfg.game_apps
+        if args.pattern not in apps:
+            sys.exit(f"'{args.pattern}' isn't in the list: {', '.join(apps)}")
+        cfg.game_apps = [a for a in apps if a != args.pattern]
+    if args.action != "status":
+        cfg.save()
+    running = running_games(cfg.game_apps)
+    print(f"Game mode    : {'on' if cfg.game_mode else 'off'} "
+          "(aptX Low Latency while a game runs, then back)")
+    print(f"Games        : processes whose command line contains {', '.join(cfg.game_apps)}")
+    print(f"Running now  : {', '.join(sorted(running)) or 'none'}")
+    if cfg.game_mode:
+        service_hint()
+
+
 def cmd_gui(args):
     from .window import main as window_main
     window_main()
@@ -374,6 +488,25 @@ def cmd_tray(args):
 
 # --- argument parsing --------------------------------------------------------
 
+def run_notifying(args):
+    """Run a command, showing its output (or error) as a desktop notification."""
+    import contextlib
+    import io
+    out = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            main_body(args)
+    except SystemExit as e:
+        if e.code not in (None, 0):
+            notify("BT-W5", str(e.code) if isinstance(e.code, str) else "Failed")
+            raise
+    text = out.getvalue().strip()
+    print(text)
+    if text:
+        lines = text.splitlines()
+        notify(lines[0], "\n".join(lines[1:]))
+
+
 def build_parser():
     ap = argparse.ArgumentParser(
         prog="btw5-switch",
@@ -382,6 +515,11 @@ def build_parser():
                "settings, wpctl or alsamixer.")
     ap.add_argument("-v", "--verbose", action="store_true", help="hex-dump USB traffic to stderr")
     ap.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+    ap.add_argument("--device", dest="usb_id", metavar="VID:PID", default=os.environ.get("BTW5_DEVICE"),
+                    help="USB ID of the dongle (default 041e:3130, the BT-W5; also BTW5_DEVICE)")
+    ap.add_argument("--notify", dest="notify_result", action="store_true",
+                   help="show the result as a desktop notification (for keyboard shortcuts and "
+                        "launchers, where there's no terminal)")
     sub = ap.add_subparsers(dest="cmd", required=True, metavar="COMMAND")
 
     def add(name, fn, help, json_opt=False, device=True):
@@ -417,11 +555,26 @@ def build_parser():
     p.add_argument("--notify", action="store_true", help="also show desktop notifications for changes")
     p.add_argument("--all", action="store_true",
                    help="print every report, including replies to other programs' queries")
+    p.add_argument("--no-automation", dest="automation", action="store_false",
+                   help="don't apply headset preferences or game mode (see 'prefer' and 'game-mode')")
     p.add_argument("--no-reconnect", dest="reconnect", action="store_false",
                    help="exit when the dongle disappears instead of waiting for it")
     p = add("waybar", cmd_waybar, "print status as JSON for a waybar/polybar custom module", device=False)
     p.add_argument("--interval", type=float, default=0,
                    help="keep printing every N seconds (default: print once and exit)")
+    p = add("prefer", cmd_prefer, "settings to apply whenever a headset connects "
+            "(list them without arguments)", True, device=False)
+    p.add_argument("headset", nargs="?",
+                   help="paired headset name, address, or 'current' for the connected one")
+    p.add_argument("--aptx", choices=["hq", "ll"])
+    p.add_argument("--hfp", choices=["on", "off"])
+    p.add_argument("--auto-hfp", choices=["on", "off"])
+    p.add_argument("--current", action="store_true", help="remember the headset's current settings")
+    p.add_argument("--clear", action="store_true", help="forget the preferences for this headset")
+    p = add("game-mode", cmd_game_mode, "use aptX Low Latency automatically while a game runs",
+            device=False)
+    p.add_argument("action", nargs="?", default="status", choices=["status", "on", "off", "add", "remove"])
+    p.add_argument("pattern", nargs="?", help="for add/remove: part of a game's command line")
     add("gui", cmd_gui, "open the BT-W5 Switch window (needs PyQt6 or PySide6)", device=False)
     p = add("tray", cmd_tray, "run a system tray icon (needs PyQt6 or PySide6)", device=False)
     p.add_argument("--interval", type=float, default=15, help="seconds between status refreshes")
@@ -434,6 +587,18 @@ def build_parser():
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
+    if args.usb_id:
+        from .device import use_device
+        try:
+            use_device(args.usb_id)
+        except BTW5Error as e:
+            sys.exit(str(e))
+    if args.notify_result and args.cmd not in ("monitor", "tray", "gui", "waybar"):
+        return run_notifying(args)
+    main_body(args)
+
+
+def main_body(args):
     # exit cleanly on SIGTERM so the HID driver gets reattached
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
     try:

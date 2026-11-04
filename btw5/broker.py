@@ -103,8 +103,10 @@ def broker_available(path=None):
 
 def default_transport(busy_wait=3.0):
     """Use a running broker if there is one, otherwise the USB device directly."""
+    from . import device
     path = socket_path()
-    if path and broker_available(path):
+    # the broker shares the BT-W5; another --device is always opened directly
+    if (device.VENDOR_ID, device.PRODUCT_ID) == (0x041e, 0x3130) and path and broker_available(path):
         return SocketTransport(path)
     return UsbTransport(busy_wait=busy_wait)
 
@@ -191,7 +193,7 @@ class Broker:
             except OSError:  # incl. BlockingIOError: its queue is full, it isn't reading
                 self._drop(c)
 
-    def run(self, on_report=None):
+    def run(self, on_report=None, on_idle=None):
         try:
             while True:
                 self.poll_clients()
@@ -200,6 +202,8 @@ class Broker:
                     self.broadcast(raw)
                     if on_report:
                         on_report(raw)
+                if on_idle:
+                    on_idle()
         except Gone:
             # Kick clients so their requests fail fast instead of timing out.
             for c in list(self.clients):

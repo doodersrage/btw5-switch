@@ -9,7 +9,11 @@ CAPTURE = os.path.join(os.path.dirname(__file__), "..", "bt-w5.pcapng")
 def usb_frames(path=CAPTURE):
     """Yield (direction, report) for every BT-W5 '03 5a' HID report in the capture.
 
-    direction is '>' for host->dongle (SET_REPORT data) and '<' for dongle->host."""
+    direction is '>' for host->dongle (SET_REPORT data) and '<' for dongle->host.
+    Skips the calling test if the capture isn't there (release tarballs leave it out)."""
+    if not os.path.exists(path):
+        import pytest
+        pytest.skip("bt-w5.pcapng isn't included (release tarball)")
     data = open(path, "rb").read()
     i = 0
     while i + 8 <= len(data):

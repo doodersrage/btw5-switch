@@ -1,0 +1,32 @@
+name: Another Creative dongle (BT-W3, BT-W4, BT-W6, …)
+description: Help add support for a dongle other than the BT-W5
+labels: [new device]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Other Creative BT-W dongles may speak the same protocol. Thanks for helping find out!
+        Find your dongle's USB ID with `lsusb | grep -i creative` (it looks like `041e:XXXX`).
+  - type: input
+    id: model
+    attributes:
+      label: Dongle model and USB ID
+      placeholder: e.g. Creative BT-W4, 041e:XXXX
+    validations:
+      required: true
+  - type: textarea
+    id: lsusb
+    attributes:
+      label: Output of `lsusb -v -d 041e:XXXX`
+      render: text
+  - type: textarea
+    id: dump
+    attributes:
+      label: Output of `btw5-switch --device 041e:XXXX -v dump`
+      description: Read-only; it only asks the dongle for its settings.
+      render: text
+  - type: textarea
+    id: notes
+    attributes:
+      label: What worked?
+      description: Optionally try `btw5-switch --device 041e:XXXX status`, `ll` and `hq` with a headset connected and tell us what happened.

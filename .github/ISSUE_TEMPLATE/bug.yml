@@ -1,0 +1,33 @@
+name: Something doesn't work
+description: A command, the window or the tray doesn't do what it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: verbose
+    attributes:
+      label: Output with -v
+      description: Run the command that misbehaves with -v, e.g. `btw5-switch -v status`, and paste everything it prints.
+      render: text
+  - type: textarea
+    id: dump
+    attributes:
+      label: Output of `btw5-switch dump`
+      description: Or click "Copy diagnostics" in the window and paste here.
+      render: text
+  - type: input
+    id: system
+    attributes:
+      label: Distribution and desktop
+      placeholder: e.g. Arch Linux, KDE Plasma 6 (Wayland)
+  - type: input
+    id: headset
+    attributes:
+      label: Headset model
+      placeholder: e.g. Sennheiser MOMENTUM 4

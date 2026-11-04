@@ -87,3 +87,42 @@ jobs:
           ! command -v btw5-switch
           test ! -e /opt/btw5-switch
           test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules
+
+  # Build the packages, install them like a user would, check, remove.
+  package-deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - run: packaging/build-deb.sh dist
+      - run: sudo apt-get update && sudo apt-get install -y ./dist/btw5-switch_*_all.deb
+      - run: sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 desktop-file-utils
+      - run: EXPECT_BIN=/usr/bin/btw5-switch PYTHON=/usr/bin/python3 ./ci-install-check.sh
+      - run: |
+          sudo apt-get remove -y btw5-switch
+          ! command -v btw5-switch
+          test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deb
+          path: dist/*.deb
+
+  package-rpm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: fedora:latest
+    steps:
+      - run: dnf install -y git rpm-build python3-devel systemd-rpm-macros
+      - uses: actions/checkout@v5
+      - run: packaging/build-rpm.sh dist
+      - run: dnf install -y ./dist/btw5-switch-*.noarch.rpm
+      - run: dnf install -y mesa-libEGL mesa-libGL libxkbcommon fontconfig desktop-file-utils
+      - run: EXPECT_BIN=/usr/bin/btw5-switch PYTHON=/usr/bin/python3 ./ci-install-check.sh
+      - run: |
+          dnf remove -y btw5-switch
+          ! command -v btw5-switch
+          test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpm
+          path: dist/*.rpm

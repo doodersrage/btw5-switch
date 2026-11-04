@@ -1,5 +1,5 @@
 # fish completion for btw5-switch
-set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired forget monitor waybar gui tray raw
+set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode forget monitor waybar gui tray raw
 complete -c btw5-switch -f
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -s v -l verbose -d 'hex-dump USB traffic'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -s V -l version -d 'show version'
@@ -15,6 +15,10 @@ complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a scan -d 'l
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a disconnect -d 'disconnect the headset'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a pair -d 'connect to a headset'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a paired -d 'list remembered headsets'
+complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a prefer -d 'settings per headset'
+complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a game-mode -d 'Low Latency while gaming'
+complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -l notify -d 'result as a notification'
+complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -l device -r -d 'USB ID (VID:PID)'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a forget -d 'forget all paired headsets'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a monitor -d 'watch for changes'
 complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a waybar -d 'status bar JSON'
@@ -25,11 +29,19 @@ complete -c btw5-switch -n "not __fish_seen_subcommand_from $cmds" -a raw -d 'se
 complete -c btw5-switch -n "__fish_seen_subcommand_from status info dump scan paired" -l json -d 'machine-readable output'
 complete -c btw5-switch -n "__fish_seen_subcommand_from paired" -l names -d 'names only'
 complete -c btw5-switch -n "__fish_seen_subcommand_from hfp auto-hfp" -a 'on off'
-complete -c btw5-switch -n "__fish_seen_subcommand_from pair" -a '(btw5-switch paired --names 2>/dev/null)' -d 'paired headset'
+complete -c btw5-switch -n "__fish_seen_subcommand_from pair prefer" -a '(btw5-switch paired --names 2>/dev/null)' -d 'paired headset'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -a current -d 'the connected headset'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -l aptx -x -a 'hq ll'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -l hfp -x -a 'on off'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -l auto-hfp -x -a 'on off'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -l current -d 'remember current settings'
+complete -c btw5-switch -n "__fish_seen_subcommand_from prefer" -l clear -d 'forget preferences'
+complete -c btw5-switch -n "__fish_seen_subcommand_from game-mode" -a 'status on off add remove'
 complete -c btw5-switch -n "__fish_seen_subcommand_from pair" -l timeout -r
 complete -c btw5-switch -n "__fish_seen_subcommand_from forget" -s y -l yes -d "don't ask"
 complete -c btw5-switch -n "__fish_seen_subcommand_from monitor" -l notify -d 'desktop notifications'
 complete -c btw5-switch -n "__fish_seen_subcommand_from monitor" -l all -d 'print every report'
 complete -c btw5-switch -n "__fish_seen_subcommand_from monitor" -l no-reconnect -d 'exit when the dongle disappears'
+complete -c btw5-switch -n "__fish_seen_subcommand_from monitor" -l no-automation -d 'no preferences or game mode'
 complete -c btw5-switch -n "__fish_seen_subcommand_from waybar tray" -l interval -r
 complete -c btw5-switch -n "__fish_seen_subcommand_from raw" -l listen -r

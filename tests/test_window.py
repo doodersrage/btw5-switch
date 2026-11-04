@@ -26,6 +26,14 @@ def app():
     return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
+@pytest.fixture(autouse=True)
+def isolated(tmp_path, monkeypatch):
+    """Never touch the real config or systemd from tests."""
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
+    monkeypatch.setattr("btw5.service.is_active", lambda: False)
+    monkeypatch.setattr("btw5.service.enable", lambda: (True, "Background service started."))
+
+
 @pytest.fixture
 def make(app, monkeypatch):
     """make(fake) -> a shown Window talking to that fake dongle."""
@@ -147,3 +155,39 @@ def test_message_banner_dismiss(app, make):
     assert w.message() == "hello"
     w.banner.findChild(QtWidgets.QToolButton).click()
     assert w.message() == ""
+
+
+
+def test_remember_settings_for_headset(app, make):
+    from btw5.config import Config
+    fake = FakeDongle()
+    w = make(fake)
+    assert "MOMENTUM 4" in w.remember.text() and not w.remember.isChecked()
+    w.remember.click()
+    prefs = Config().preferences("ba:52:e9:09:80:c3")
+    assert prefs == {"aptx": "hq", "hfp": "off", "auto-hfp": "off"}
+    w.ll.click()                                   # changes keep the preference in step
+    wait(app, lambda: Config().preferences("ba:52:e9:09:80:c3").get("aptx") == "ll")
+    wait(app, lambda: not w.worker.busy)
+    w.remember.click()                             # unticking forgets them
+    assert Config().preferences("ba:52:e9:09:80:c3") == {}
+
+
+def test_game_mode_controls(app, make):
+    from btw5.config import Config
+    w = make(FakeDongle())
+    assert not w.game_mode.isChecked() and "SteamLaunch" in w.game_apps.text()
+    w.game_mode.click()
+    assert Config().game_mode
+    w.game_apps.setText("SteamLaunch, minecraft")
+    w.game_apps.editingFinished.emit()
+    assert Config().game_apps == ["SteamLaunch", "minecraft"]
+
+
+def test_service_button(app, make, monkeypatch):
+    w = make(FakeDongle())
+    assert not w.service_btn.isHidden() and "isn't running" in w.service_label.text()
+    monkeypatch.setattr("btw5.service.is_active", lambda: True)
+    w.service_btn.click()
+    wait(app, lambda: "service started" in w.message())
+    wait(app, lambda: w.service_btn.isHidden() and "running" in w.service_label.text())

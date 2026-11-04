@@ -104,3 +104,25 @@ def test_usb_errors_become_btw5_errors():
     assert isinstance(err, BTW5Error) and not isinstance(err, Gone)
     with pytest.raises(BTW5Error):
         raise err
+
+
+def test_not_found_mentions_other_creative_devices(monkeypatch):
+    from btw5 import device
+    monkeypatch.setattr(device, "other_creative_devices", lambda: [(0x3132, "Creative BT-W4")])
+    msg = str(device.NotFound(look_for_others=True))
+    assert "041e:3132  Creative BT-W4" in msg and "--device 041e:XXXX dump" in msg
+    assert "Found other" not in str(device.NotFound())
+
+
+def test_use_device(monkeypatch):
+    import pytest
+
+    from btw5 import device
+    from btw5.device import BTW5Error
+    monkeypatch.setattr(device, "VENDOR_ID", device.VENDOR_ID)
+    monkeypatch.setattr(device, "PRODUCT_ID", device.PRODUCT_ID)
+    device.use_device("041e:3132")
+    assert (device.VENDOR_ID, device.PRODUCT_ID) == (0x041e, 0x3132)
+    assert "No USB device 041e:3132" in str(device.NotFound(look_for_others=True))
+    with pytest.raises(BTW5Error):
+        device.use_device("bt-w4")
