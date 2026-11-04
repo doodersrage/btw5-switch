@@ -1,63 +1,19 @@
 #!/bin/sh
-# Build a Debian/Ubuntu package from this source tree:  packaging/build-deb.sh [outdir]
-# Uses the distribution's python3-usb (and python3-pyqt6 for the window), no pip.
+# Build the Debian/Ubuntu package with the debian/ packaging:  packaging/build-deb.sh [outdir]
+# Needs: debhelper dh-python python3-pytest (dpkg-buildpackage runs the tests).
 set -e
 src=$(cd "$(dirname "$0")/.." && pwd)
-out=${1:-$src}
+out=${1:-$src/dist}
 version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$src/btwctl/__init__.py")
-root=$(mktemp -d)
-trap 'rm -rf "$root"' EXIT
-
-mkdir -p "$root/DEBIAN" "$root/usr/lib/python3/dist-packages" "$root/usr/bin"
-cp -r "$src/btwctl" "$root/usr/lib/python3/dist-packages/"
-find "$root" -name __pycache__ -prune -exec rm -rf {} +
-cat > "$root/usr/bin/btwctl" <<'PY'
-#!/usr/bin/python3
-from btwctl.cli import main
-main()
-PY
-chmod 755 "$root/usr/bin/btwctl"
-ln -s btwctl "$root/usr/bin/btw5-switch"   # the name before 0.7
-"$src/install-files.sh" "$root"
-install -Dm644 "$src/LICENSE" "$root/usr/share/doc/btwctl/copyright"
-rm -rf "$root/usr/share/licenses"   # Debian keeps it as doc/<pkg>/copyright
-
-size=$(du -sk "$root/usr" | cut -f1)
-cat > "$root/DEBIAN/control" <<CTL
-Package: btwctl
-Version: $version-1
-Section: sound
-Priority: optional
-Architecture: all
-Depends: python3 (>= 3.9), python3-usb
-Recommends: python3-pyqt6 | python3-pyside6, libnotify-bin
-Conflicts: btw5-switch
-Replaces: btw5-switch
-Provides: btw5-switch
-Installed-Size: $size
-Maintainer: Robert McDowell <doodersrage@gmail.com>
-Homepage: https://github.com/doodersrage/btwctl
-Description: Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
- Switch aptX Adaptive between High Quality and Low Latency, turn the headset
- microphone (HFP) on or off, pair and switch between headsets, and get
- notified when a headset connects. Includes a settings window, a tray icon
- and a command line tool.
-CTL
-cat > "$root/DEBIAN/postinst" <<'SH'
-#!/bin/sh
-set -e
-if [ "$1" = configure ]; then
-    udevadm control --reload-rules 2>/dev/null || true
-    udevadm trigger --subsystem-match=usb --attr-match=idVendor=041e 2>/dev/null || true
-    echo "btwctl: unplug the dongle and plug it back in to get access to it."
-fi
-SH
-cat > "$root/DEBIAN/postrm" <<'SH'
-#!/bin/sh
-set -e
-udevadm control --reload-rules 2>/dev/null || true
-SH
-chmod 755 "$root/DEBIAN/postinst" "$root/DEBIAN/postrm"
-
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+# build from a clean copy (no .git, no capture/screenshot: like a release tarball)
+mkdir "$work/btwctl-$version"
+(cd "$src" && tar --exclude=.git --exclude=bt-w5.pcapng --exclude=btw5-wireshark.png \
+    --exclude=__pycache__ --exclude=pkg --exclude=src --exclude='*.pkg.tar.zst' --exclude=dist \
+    --exclude=build --exclude='*.egg-info' -cf - .) | tar -C "$work/btwctl-$version" -xf -
+# the package version follows btwctl/__init__.py
+sed -i "1s/^btwctl ([^)]*)/btwctl ($version)/" "$work/btwctl-$version/debian/changelog"
+(cd "$work/btwctl-$version" && dpkg-buildpackage -us -uc -b)
 mkdir -p "$out"
-dpkg-deb --root-owner-group --build "$root" "$out/btwctl_${version}-1_all.deb"
+cp "$work"/btwctl_*_all.deb "$out/"

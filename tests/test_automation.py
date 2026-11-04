@@ -38,7 +38,7 @@ class Rig:
         self.proc = fake_proc(tmp_path)
         self.values = {P.GET_APTX: aptx, P.GET_HFP: hfp, P.GET_AUTO_HFP: auto}
         self.a = Automation(cfg, self.tracker, send=self.send, say=self.said.append,
-                            proc=self.proc, clock=lambda: self.now)
+                            proc=self.proc, clock=lambda: self.now, audio=False)
 
     def send(self, cmd, payload):
         """Behave like the dongle: settings change, reads answer (as reports)."""

@@ -191,3 +191,12 @@ def test_service_button(app, make, monkeypatch):
     w.service_btn.click()
     wait(app, lambda: "service started" in w.message())
     wait(app, lambda: w.service_btn.isHidden() and "running" in w.service_label.text())
+
+
+def test_audio_follow_checkbox(app, make, monkeypatch):
+    from btwctl.config import Config
+    monkeypatch.setattr("btwctl.audio.available", lambda: True)
+    w = make(FakeDongle())
+    assert not w.audio_follow.isChecked()
+    w.audio_follow.click()
+    assert Config().audio_follow and "follow the headset" in w.message()

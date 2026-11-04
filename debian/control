@@ -1,0 +1,22 @@
+Source: btwctl
+Section: sound
+Priority: optional
+Maintainer: Robert McDowell <doodersrage@gmail.com>
+Build-Depends: debhelper-compat (= 13), dh-python, python3, python3-pytest <!nocheck>
+Standards-Version: 4.6.2
+Homepage: https://github.com/doodersrage/btwctl
+Rules-Requires-Root: no
+
+Package: btwctl
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-usb
+Recommends: python3-pyqt6 | python3-pyside6, libnotify-bin, wireplumber
+Conflicts: btw5-switch
+Replaces: btw5-switch
+Provides: btw5-switch
+Description: Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
+ Switch aptX Adaptive between High Quality and Low Latency, turn the headset
+ microphone (HFP) on or off, pair and switch between headsets, and get
+ notified when a headset connects. Per-headset settings, a game mode and
+ automatic switching of the default audio device. Includes a settings
+ window, a tray icon and a command line tool.

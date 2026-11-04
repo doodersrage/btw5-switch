@@ -1,6 +1,9 @@
 #!/bin/sh
-# Build an RPM from this source tree:  packaging/build-rpm.sh [outdir]   (needs rpm-build)
+# Build an RPM from this source tree:  packaging/build-rpm.sh [--srpm] [outdir]   (needs rpm-build)
+# --srpm builds only the source RPM (what Fedora COPR does via .copr/Makefile).
 set -e
+srpm=
+if [ "$1" = --srpm ]; then srpm=1; shift; fi
 src=$(cd "$(dirname "$0")/.." && pwd)
 out=${1:-$src}
 version=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$src/btwctl/__init__.py")
@@ -13,6 +16,11 @@ mkdir -p "$top/SOURCES" "$top/staging/btwctl-$version"
     --exclude='*.egg-info' -cf - .) | tar -C "$top/staging/btwctl-$version" -xf -
 tar -C "$top/staging" -czf "$top/SOURCES/btwctl-$version.tar.gz" "btwctl-$version"
 sed "s/^Version:.*/Version:        $version/" "$src/packaging/btwctl.spec" > "$top/btwctl.spec"
-rpmbuild -bb --define "_topdir $top" "$top/btwctl.spec"
 mkdir -p "$out"
-cp "$top"/RPMS/noarch/*.rpm "$out/"
+if [ -n "$srpm" ]; then
+    rpmbuild -bs --define "_topdir $top" "$top/btwctl.spec"
+    cp "$top"/SRPMS/*.src.rpm "$out/"
+else
+    rpmbuild -bb --define "_topdir $top" "$top/btwctl.spec"
+    cp "$top"/RPMS/noarch/*.rpm "$out/"
+fi

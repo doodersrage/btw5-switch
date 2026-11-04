@@ -55,6 +55,11 @@ class Tray:
         from .config import Config
         return Config()
 
+    def set_audio_follow(self, on):
+        cfg = self.config()
+        cfg.audio_follow = on
+        cfg.save()
+
     def set_game_mode(self, on):
         cfg = self.config()
         cfg.game_mode = on
@@ -145,6 +150,10 @@ class Tray:
             m.addAction(a)
             m.addSeparator()
 
+            a = QAction("Sound follows the headset", m, checkable=True)
+            a.setChecked(self.config().audio_follow)
+            a.triggered.connect(self.set_audio_follow)
+            m.addAction(a)
             a = QAction("Low Latency while gaming", m, checkable=True)
             a.setChecked(self.config().game_mode)
             a.setToolTip("Applied by the background service")

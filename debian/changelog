@@ -1,0 +1,5 @@
+btwctl (0.8) unstable; urgency=medium
+
+  * Audio follows the headset; see CHANGELOG.md.
+
+ -- Robert McDowell <doodersrage@gmail.com>  Tue, 03 Nov 2026 21:30:00 -0500

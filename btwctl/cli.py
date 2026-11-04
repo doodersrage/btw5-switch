@@ -482,6 +482,29 @@ def cmd_game_mode(args):
         service_hint()
 
 
+def cmd_audio_follow(args):
+    from . import audio
+    from .config import Config
+    cfg = Config()
+    if args.action in ("on", "off"):
+        cfg.audio_follow = args.action == "on"
+        cfg.save()
+    print(f"Audio follows the headset : {'on' if cfg.audio_follow else 'off'} "
+          "(sound and, with HFP, the mic switch to the dongle while a headset is connected)")
+    if not audio.available():
+        print("Needs PipeWire's pw-dump and wpctl, which aren't installed.")
+        return
+    s = audio.snapshot()
+    if s:
+        def name(kind, current):
+            n = next((n for n in s[kind] if n["name"] == current), None)
+            return (n["description"] + ("  (the dongle)" if n["dongle"] else "")) if n else "none"
+        print(f"Default output now        : {name('sinks', s['default_sink'])}")
+        print(f"Default microphone now    : {name('sources', s['default_source'])}")
+    if cfg.audio_follow:
+        service_hint()
+
+
 def cmd_gui(args):
     from .window import main as window_main
     window_main()
@@ -581,6 +604,9 @@ def build_parser():
             device=False)
     p.add_argument("action", nargs="?", default="status", choices=["status", "on", "off", "add", "remove"])
     p.add_argument("pattern", nargs="?", help="for add/remove: part of a game's command line")
+    p = add("audio-follow", cmd_audio_follow,
+            "make the dongle the default audio device while a headset is connected", device=False)
+    p.add_argument("action", nargs="?", default="status", choices=["status", "on", "off"])
     add("gui", cmd_gui, "open the BT-W Control window (needs PyQt6 or PySide6)", device=False)
     p = add("tray", cmd_tray, "run a system tray icon (needs PyQt6 or PySide6)", device=False)
     p.add_argument("--interval", type=float, default=15, help="seconds between status refreshes")

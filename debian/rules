@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+# Plain file installation (no setuptools needed, so it builds on older releases too).
+PKG := debian/btwctl
+
+%:
+	dh $@ --with python3
+
+override_dh_auto_build:
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	python3 -m pytest -q -p no:cacheprovider tests
+endif
+
+override_dh_auto_install:
+	install -d $(PKG)/usr/lib/python3/dist-packages $(PKG)/usr/bin
+	cp -r btwctl $(PKG)/usr/lib/python3/dist-packages/
+	find $(PKG) -name __pycache__ -prune -exec rm -rf {} +
+	printf '#!/usr/bin/python3\nfrom btwctl.cli import main\nmain()\n' > $(PKG)/usr/bin/btwctl
+	chmod 755 $(PKG)/usr/bin/btwctl
+	ln -s btwctl $(PKG)/usr/bin/btw5-switch
+	./install-files.sh $(PKG)
+	# Debian keeps the license as /usr/share/doc/btwctl/copyright
+	rm -rf $(PKG)/usr/share/licenses
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.md

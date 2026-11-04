@@ -164,6 +164,11 @@ class Window(W.QMainWindow):
                                   "(comma-separated, case doesn't matter)")
         self.game_apps.editingFinished.connect(self.set_game_apps)
         form.addRow("Games:", self.game_apps)
+        self.audio_follow = W.QCheckBox("Switch sound to the dongle while a headset is connected, and back after")
+        self.audio_follow.setToolTip("Sets the default output (and, with the headset microphone on, the default "
+                                     "microphone) through PipeWire")
+        self.audio_follow.clicked.connect(self.set_audio_follow)
+        form.addRow(self.audio_follow)
         row = W.QHBoxLayout()
         self.service_label = W.QLabel()
         self.service_label.setWordWrap(True)
@@ -386,6 +391,7 @@ class Window(W.QMainWindow):
             self.remember.setText("Use these settings whenever this headset connects")
             self.remember.setChecked(False)
         self.game_mode.setChecked(self.config.game_mode)
+        self.audio_follow.setChecked(self.config.audio_follow)
         if not self.game_apps.hasFocus():
             self.game_apps.setText(", ".join(self.config.game_apps))
         running = r.get("service")
@@ -505,6 +511,17 @@ class Window(W.QMainWindow):
         self.config.save()
         self.say("Game mode on: Low Latency while a game runs." if on else "Game mode off.",
                  kind="ok" if on else "info")
+
+    def set_audio_follow(self, on):
+        from . import audio
+        self.config.reload_if_changed()
+        self.config.audio_follow = on
+        self.config.save()
+        if on and not audio.available():
+            self.say("This needs PipeWire (pw-dump and wpctl aren't installed).", 15000, "warn")
+        else:
+            self.say("Sound will follow the headset." if on else "Sound won't switch automatically.",
+                     kind="ok" if on else "info")
 
     def set_game_apps(self):
         apps = [a.strip() for a in self.game_apps.text().split(",") if a.strip()]

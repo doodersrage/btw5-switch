@@ -24,6 +24,7 @@ _btwctl() {
         'paired:list the remembered headsets'
         'prefer:settings to apply whenever a headset connects'
         'game-mode:Low Latency while a game runs'
+        'audio-follow:make the dongle the default audio device while a headset is connected'
         'forget:forget all paired headsets'
         'monitor:print connection and setting changes as they happen'
         'waybar:print status as JSON for a status bar'
@@ -53,6 +54,7 @@ _btwctl() {
                                    '--clear[forget preferences]' '--json[machine-readable output]' \
                                    '1:headset:{_btwctl_paired_names; compadd current}' ;;
                 game-mode) _arguments '1:action:(status on off add remove)' '2:pattern:' ;;
+                audio-follow) _arguments '1:action:(status on off)' ;;
                 forget) _arguments '(-y --yes)'{-y,--yes}'[do not ask]' ;;
                 monitor) _arguments '--notify[desktop notifications]' '--all[print every report]' \
                                     '--no-reconnect[exit when the dongle disappears]' \

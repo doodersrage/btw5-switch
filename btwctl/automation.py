@@ -5,6 +5,8 @@
   dongle restart, so never send it needlessly).
 - Game mode: while a game is running, use aptX Adaptive Low Latency; when the
   last game exits, go back to the mode from before.
+- Audio follows the headset: make the dongle the default output (and, with
+  HFP on, microphone) while a headset is connected, and switch back after.
 
 It works on the report stream the monitor already watches: ChangeTracker knows
 the current state, and commands are sent fire-and-forget (their effects come
@@ -19,6 +21,8 @@ from . import protocol as P
 GAME_CHECK_SECONDS = 3.0
 APPLY_DELAY = 2.5        # settle time after a headset connects before changing settings
 APPLY_RETRIES = 4
+AUDIO_DELAY = 1.0        # let PipeWire notice the change first
+AUDIO_RETRIES = 8
 
 
 def running_games(patterns, proc="/proc"):
@@ -51,7 +55,7 @@ def describe_prefs(prefs):
 
 class Automation:
     def __init__(self, config, tracker, send, say=print, notify=None,
-                 proc="/proc", clock=time.monotonic):
+                 proc="/proc", clock=time.monotonic, audio=None):
         self.config = config
         self.tracker = tracker
         self.send = send            # send(cmd, payload)
@@ -65,6 +69,14 @@ class Automation:
         self.next_game_check = 0.0
         self.game = None            # set of running game patterns while game mode is active
         self.saved_mode = None      # aptX mode to restore when the games exit
+
+        if audio is None:
+            from .audio import AudioFollower, available
+            audio = AudioFollower() if available() else None
+        self.audio = audio          # None: no PipeWire tools
+        self.link = None            # headset connected? (None: not known yet)
+        self.hfp = None             # last HFP value seen
+        self.audio_jobs = []        # [action, kind, due, tries]
 
     # --- state helpers -----------------------------------------------------
 
@@ -89,9 +101,27 @@ class Automation:
 
     def feed(self, cmd, p):
         """Watch the report stream for headsets connecting and disconnecting."""
+        setting = P.parse_setting(p) if cmd == P.CMD_BT else None
+        if setting and setting[0] == P.GET_HFP:
+            on = setting[1] == P.HFP_VALUES["on"]
+            if on != self.hfp:
+                self.hfp = on
+                if self.link:
+                    self.queue_audio("to" if on else "from", "sources")
         conn = P.parse_conn(p) if cmd == P.CMD_BT else None
         if not conn:
             return
+        if conn[0] in (P.CONN_CONNECTED, P.CONN_DISCONNECTED, P.CONN_NOT_CONNECTED):
+            link = conn[0] == P.CONN_CONNECTED
+            if link != self.link:
+                self.link = link
+                if link:
+                    self.queue_audio("to", "sinks")
+                    if self.hfp:
+                        self.queue_audio("to", "sources")
+                else:
+                    self.queue_audio("from", "sinks")
+                    self.queue_audio("from", "sources")
         state, addr, name = conn
         if state == P.CONN_CONNECTED:
             if not self.connected or self.connected[0] != addr:
@@ -115,6 +145,35 @@ class Automation:
         if now >= self.next_game_check:
             self.next_game_check = now + GAME_CHECK_SECONDS
             self.check_games()
+        if self.audio_jobs:
+            self.run_audio_jobs(now)
+
+    # --- audio follows the headset ----------------------------------------------------
+
+    def queue_audio(self, action, kind):
+        # a newer job for the same kind replaces an older one
+        self.audio_jobs = [j for j in self.audio_jobs if j[1] != kind]
+        self.audio_jobs.append([action, kind, self.clock() + AUDIO_DELAY, 0])
+
+    def run_audio_jobs(self, now):
+        if not (self.audio and self.config.audio_follow):
+            self.audio_jobs = []
+            return
+        keep = []
+        for job in self.audio_jobs:
+            action, kind, due, tries = job
+            if now < due:
+                keep.append(job)
+                continue
+            fn = self.audio.to_dongle if action == "to" else self.audio.from_dongle
+            result = fn(kind)
+            if result is None and tries < AUDIO_RETRIES:
+                # e.g. the dongle's sound card isn't back yet after a restart
+                keep.append([action, kind, now + 1.5, tries + 1])
+            elif result:
+                what = "Sound" if kind == "sinks" else "Microphone"
+                self.tell(f"{what}: {result}")
+        self.audio_jobs = keep
 
     # --- per-headset preferences ----------------------------------------------------
 

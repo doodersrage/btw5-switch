@@ -3,7 +3,7 @@
 %global srcname btwctl
 
 Name:           btwctl
-Version:        0.7
+Version:        0.8
 Release:        1%{?dist}
 Summary:        Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
 License:        MIT
@@ -19,6 +19,7 @@ Obsoletes:      btw5-switch < 0.7
 Provides:       btw5-switch = %{version}-%{release}
 Recommends:     python3-pyqt6
 Recommends:     libnotify
+Recommends:     wireplumber
 
 %description
 Switch aptX Adaptive between High Quality and Low Latency, turn the headset
@@ -70,6 +71,8 @@ udevadm control --reload-rules >/dev/null 2>&1 || :
 %{_datadir}/fish/vendor_completions.d/btw5-switch.fish
 
 %changelog
+* Tue Nov 03 2026 Robert McDowell <doodersrage@gmail.com> - 0.8-1
+- Audio follows the headset; PPA/COPR packaging
 * Tue Nov 03 2026 Robert McDowell <doodersrage@gmail.com> - 0.7-1
 - Renamed from btw5-switch; BT-W6 support
 * Tue Nov 03 2026 Robert McDowell <doodersrage@gmail.com> - 0.6-1

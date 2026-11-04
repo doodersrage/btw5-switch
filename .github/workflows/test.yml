@@ -95,8 +95,14 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper dh-python python3-pytest
       - run: packaging/build-deb.sh dist
-      - run: sudo apt-get update && sudo apt-get install -y ./dist/btwctl_*_all.deb
+      - name: Source package builds too (what a Launchpad PPA builds from)
+        run: |
+          cp -r . /tmp/srcpkg && cd /tmp/srcpkg && rm -rf .git dist
+          dpkg-buildpackage -S -us -uc -d
+          ls ../btwctl_*.dsc
+      - run: sudo apt-get install -y ./dist/btwctl_*_all.deb
       - run: sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 desktop-file-utils
       - run: EXPECT_BIN=/usr/bin/btwctl PYTHON=/usr/bin/python3 ./ci-install-check.sh
       - run: |
@@ -116,6 +122,11 @@ jobs:
       - run: dnf install -y git rpm-build python3-devel systemd-rpm-macros
       - uses: actions/checkout@v5
       - run: packaging/build-rpm.sh dist
+      - name: COPR path builds too (source RPM via .copr/Makefile, then rebuild)
+        run: |
+          dnf install -y make
+          make -f .copr/Makefile srpm outdir=/tmp/srpm
+          rpmbuild --rebuild /tmp/srpm/btwctl-*.src.rpm
       - run: dnf install -y ./dist/btwctl-*.noarch.rpm
       - run: dnf install -y mesa-libEGL mesa-libGL libxkbcommon fontconfig desktop-file-utils
       - run: EXPECT_BIN=/usr/bin/btwctl PYTHON=/usr/bin/python3 ./ci-install-check.sh

@@ -3,7 +3,7 @@ _btwctl() {
     local cur prev cmd i
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
-    local commands="status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode forget monitor waybar gui tray raw"
+    local commands="status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode audio-follow forget monitor waybar gui tray raw"
 
     cmd=
     for ((i = 1; i < COMP_CWORD; i++)); do
@@ -27,6 +27,7 @@ _btwctl() {
         forget) COMPREPLY=($(compgen -W "-y --yes" -- "$cur")) ;;
         monitor) COMPREPLY=($(compgen -W "--notify --all --no-reconnect --no-automation" -- "$cur")) ;;
         game-mode) [[ $prev == "$cmd" ]] && COMPREPLY=($(compgen -W "status on off add remove" -- "$cur")) ;;
+        audio-follow) [[ $prev == "$cmd" ]] && COMPREPLY=($(compgen -W "status on off" -- "$cur")) ;;
         waybar|tray) COMPREPLY=($(compgen -W "--interval" -- "$cur")) ;;
         pair|prefer)
             if [[ $cur == -* ]]; then

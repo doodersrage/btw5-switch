@@ -144,6 +144,12 @@ Turn it on in the window (**Automation**), the tray menu, or with `btwctl game-m
 A program counts as a game if its command line contains one of the listed words. By default these cover Steam games (native and Proton), gamescope, Lutris and Heroic.
 Add your own with `btwctl game-mode add minecraft` or in the window. `btwctl game-mode` shows the list and which ones are running right now.
 
+### Sound follows the headset
+
+The dongle stays a sound card even when no headset is connected, so sound sent to it then goes nowhere.
+With **Switch sound to the dongle while a headset is connected** (window → Automation, the tray menu, or `btwctl audio-follow on`), the dongle becomes your default output when a headset connects, and your previous output (speakers, another headset) comes back when it disconnects. With the headset microphone (HFP) on, the microphone follows too.
+If you pick a different output yourself in the meantime, that choice is left alone. This uses PipeWire (`wpctl`), the default on current desktops.
+
 ### Keyboard shortcuts and quick actions
 
 Right-click **BT-W Control** in the application menu for Low Latency, High Quality and Toggle.
@@ -171,6 +177,7 @@ btwctl info                # firmware version and serial number
 btwctl prefer [headset] [--aptx hq|ll] [--hfp on|off] [--auto-hfp on|off]
                                 # settings to apply whenever that headset connects
 btwctl game-mode [on|off|add|remove]   # Low Latency while a game runs
+btwctl audio-follow [on|off]    # default audio device follows the headset
 btwctl gui                 # settings window
 btwctl tray                # system tray icon
 btwctl monitor [--notify]  # print (and notify about) headset and setting changes
@@ -311,8 +318,8 @@ python -m btwctl status     # run from the checkout without installing
 python docs/screenshot.py docs/window.png   # regenerate the README screenshot
 ```
 
-Code layout: `btwctl/protocol.py` (frames and parsers), `btwctl/device.py` (USB access, requests), `btwctl/broker.py` (sharing the dongle), `btwctl/automation.py` and `btwctl/config.py` (per-headset settings, game mode), `btwctl/cli.py`, `btwctl/window.py` and `btwctl/tray.py` (sharing `btwctl/qt.py`).
-`aur/` holds the release PKGBUILD, `packaging/` builds the `.deb` and `.rpm`.
+Code layout: `btwctl/protocol.py` (frames and parsers), `btwctl/device.py` (USB access, requests), `btwctl/broker.py` (sharing the dongle), `btwctl/automation.py`, `btwctl/audio.py` and `btwctl/config.py` (per-headset settings, game mode, sound follows the headset), `btwctl/cli.py`, `btwctl/window.py` and `btwctl/tray.py` (sharing `btwctl/qt.py`).
+`aur/` holds the release PKGBUILD, `packaging/` builds the `.deb` and `.rpm`, `debian/` and `.copr/` are for an Ubuntu PPA and Fedora COPR ([how to publish](packaging/PUBLISHING.md)).
 To release: update `CHANGELOG.md` and `btwctl/__init__.py`, then push a tag like `v0.6`; GitHub Actions builds the packages and publishes the release.
 
 ## Status

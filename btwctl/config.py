@@ -105,6 +105,16 @@ class Config:
     def game_apps(self, apps):
         self._section("game-mode")["apps"] = "\n".join(a.strip() for a in apps if a.strip())
 
+    # --- audio follows the headset ----------------------------------------------
+
+    @property
+    def audio_follow(self):
+        return self.cp.getboolean("audio", "follow-headset", fallback=False)
+
+    @audio_follow.setter
+    def audio_follow(self, on):
+        self._section("audio")["follow-headset"] = "yes" if on else "no"
+
     # --- per-headset preferences -----------------------------------------------
 
     @staticmethod

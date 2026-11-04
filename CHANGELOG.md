@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8 (not released yet)
+
+- **Sound follows the headset**: the dongle becomes the default audio output (and, with the headset microphone on, the default microphone) while a headset is connected, and the previous device comes back when it disconnects. Turn it on in the window, the tray menu or with `btwctl audio-follow on`. Uses PipeWire.
+- Packaging for Ubuntu PPAs (`debian/`) and Fedora COPR (`.copr/Makefile`), checked in CI; see `packaging/PUBLISHING.md`. The release `.deb` is now built with the standard Debian tools.
+
 ## 0.7 (not released yet)
 
 - **Renamed to btwctl** (it was btw5-switch), since it now supports more than the BT-W5. The window is now "BT-W Control". Upgrading needs nothing else: the packages replace btw5-switch, the `btw5-switch` command still works, settings move over automatically, and a background service enabled under the old name keeps running (the window's "Start background service" switches it to `btwctl-monitor.service`).

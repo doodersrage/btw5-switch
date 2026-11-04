@@ -1,5 +1,5 @@
 # fish completion for btwctl
-set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode forget monitor waybar gui tray raw
+set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode audio-follow forget monitor waybar gui tray raw
 complete -c btwctl -f
 complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -s v -l verbose -d 'hex-dump USB traffic'
 complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -s V -l version -d 'show version'
@@ -37,6 +37,8 @@ complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l auto-hfp -x -a 'on
 complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l current -d 'remember current settings'
 complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l clear -d 'forget preferences'
 complete -c btwctl -n "__fish_seen_subcommand_from game-mode" -a 'status on off add remove'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a audio-follow -d 'sound follows the headset'
+complete -c btwctl -n "__fish_seen_subcommand_from audio-follow" -a 'status on off'
 complete -c btwctl -n "__fish_seen_subcommand_from pair" -l timeout -r
 complete -c btwctl -n "__fish_seen_subcommand_from forget" -s y -l yes -d "don't ask"
 complete -c btwctl -n "__fish_seen_subcommand_from monitor" -l notify -d 'desktop notifications'
