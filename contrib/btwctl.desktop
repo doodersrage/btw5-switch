@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=BT-W5 Switch
+Name=BT-W Control
 GenericName=Bluetooth audio dongle settings
 Comment=Settings for the Creative BT-W5 and BT-W6: aptX mode, headset microphone, pairing
-Exec=btw5-switch gui
+Exec=btwctl gui
 Icon=audio-headphones
 Terminal=false
 Categories=Settings;HardwareSettings;
@@ -13,16 +13,16 @@ Actions=low-latency;high-quality;toggle;tray;
 
 [Desktop Action low-latency]
 Name=aptX Low Latency
-Exec=btw5-switch --notify ll
+Exec=btwctl --notify ll
 
 [Desktop Action high-quality]
 Name=aptX High Quality
-Exec=btw5-switch --notify hq
+Exec=btwctl --notify hq
 
 [Desktop Action toggle]
 Name=Toggle Low Latency / High Quality
-Exec=btw5-switch --notify toggle
+Exec=btwctl --notify toggle
 
 [Desktop Action tray]
 Name=Show tray icon
-Exec=btw5-switch tray
+Exec=btwctl tray

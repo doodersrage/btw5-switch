@@ -1,6 +1,6 @@
 import pytest
 
-from btw5 import protocol as P
+from btwctl import protocol as P
 from tests.capture import usb_frames
 
 

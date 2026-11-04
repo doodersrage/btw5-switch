@@ -1,5 +1,5 @@
-from btw5 import protocol as P
-from btw5.device import BTW5, REJECTED, read_status
+from btwctl import protocol as P
+from btwctl.device import BTW5, REJECTED, read_status
 from tests.fakes import HEADSET, FakeDongle
 
 
@@ -93,7 +93,7 @@ def test_usb_errors_become_btw5_errors():
 
     import pytest
 
-    from btw5.device import BTW5Error, Gone, usb_error
+    from btwctl.device import BTW5Error, Gone, usb_error
 
     class E(Exception):
         def __init__(self, n):
@@ -107,7 +107,7 @@ def test_usb_errors_become_btw5_errors():
 
 
 def test_not_found_mentions_other_creative_devices(monkeypatch):
-    from btw5 import device
+    from btwctl import device
     monkeypatch.setattr(device, "PRODUCT_ID", None)
     monkeypatch.setattr(device, "other_creative_devices", lambda: [(0x3237, "Creative BT-W4")])
     msg = str(device.NotFound(look_for_others=True))
@@ -119,8 +119,8 @@ def test_not_found_mentions_other_creative_devices(monkeypatch):
 def test_use_device(monkeypatch):
     import pytest
 
-    from btw5 import device
-    from btw5.device import BTW5Error
+    from btwctl import device
+    from btwctl.device import BTW5Error
     monkeypatch.setattr(device, "VENDOR_ID", device.VENDOR_ID)
     monkeypatch.setattr(device, "PRODUCT_ID", device.PRODUCT_ID)
     device.use_device("041e:3132")
@@ -149,7 +149,7 @@ class FakeUSB:
 
 
 def test_auto_detects_bt_w5_and_bt_w6(monkeypatch):
-    from btw5 import device
+    from btwctl import device
     monkeypatch.setattr(device, "PRODUCT_ID", None)
     monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3132), (0x046d, 0xc08b)))
     assert device.find_dongle().idProduct == 0x3132
@@ -160,7 +160,7 @@ def test_auto_detects_bt_w5_and_bt_w6(monkeypatch):
 
 
 def test_explicit_device_overrides_auto_detection(monkeypatch):
-    from btw5 import device
+    from btwctl import device
     monkeypatch.setattr(device, "PRODUCT_ID", None)
     monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3130), (0x041e, 0x3237)))
     device.use_device("041e:3237")
@@ -169,7 +169,7 @@ def test_explicit_device_overrides_auto_detection(monkeypatch):
 
 
 def test_explicit_device_skips_the_broker(monkeypatch):
-    from btw5 import broker, device
+    from btwctl import broker, device
     monkeypatch.setattr(broker, "broker_available", lambda path=None: True)
     monkeypatch.setattr(broker, "socket_path", lambda: "/nonexistent/sock")
     monkeypatch.setattr(device, "PRODUCT_ID", None)

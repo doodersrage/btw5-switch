@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "btw5-switch"
+name = "btwctl"
 dynamic = ["version"]
 description = "Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)"
 readme = "README.md"
@@ -17,16 +17,17 @@ gui = ["PyQt6"]
 tray = ["PyQt6"]
 
 [project.scripts]
-btw5-switch = "btw5.cli:main"
+btwctl = "btwctl.cli:main"
+btw5-switch = "btwctl.cli:main"   # the name before 0.7
 
 [project.urls]
-Homepage = "https://github.com/doodersrage/btw5-switch"
+Homepage = "https://github.com/doodersrage/btwctl"
 
 [tool.setuptools]
-packages = ["btw5"]
+packages = ["btwctl"]
 
 [tool.setuptools.dynamic]
-version = {attr = "btw5.__version__"}
+version = {attr = "btwctl.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

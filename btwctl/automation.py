@@ -1,4 +1,4 @@
-"""Automatic actions run by the background service ('btw5-switch monitor').
+"""Automatic actions run by the background service ('btwctl monitor').
 
 - Per-headset preferences: when a headset connects, apply its preferred aptX
   mode, HFP and auto-HFP settings (only what differs: changing HFP makes the
@@ -83,7 +83,7 @@ class Automation:
     def tell(self, line, notify=True):
         self.say(line)
         if notify and self.notify:
-            self.notify("BT-W5", line)
+            self.notify("BT-W Control", line)
 
     # --- input -------------------------------------------------------------
 

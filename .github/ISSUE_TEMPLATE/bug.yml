@@ -13,12 +13,12 @@ body:
     id: verbose
     attributes:
       label: Output with -v
-      description: Run the command that misbehaves with -v, e.g. `btw5-switch -v status`, and paste everything it prints.
+      description: Run the command that misbehaves with -v, e.g. `btwctl -v status`, and paste everything it prints.
       render: text
   - type: textarea
     id: dump
     attributes:
-      label: Output of `btw5-switch dump`
+      label: Output of `btwctl dump`
       description: Or click "Copy diagnostics" in the window and paste here.
       render: text
   - type: input

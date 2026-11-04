@@ -1,8 +1,8 @@
 """Share the dongle between processes.
 
 Only one process can claim the BT-W5's HID interface. A long-running owner
-('btw5-switch monitor') runs a Broker that serves a Unix socket; other
-btw5-switch processes find the socket and talk through it with
+('btwctl monitor') runs a Broker that serves a Unix socket; other
+btwctl processes find the socket and talk through it with
 SocketTransport instead of failing with 'busy'.
 
 Wire format: SOCK_SEQPACKET, one 65-byte HID report per message. Clients send
@@ -33,7 +33,7 @@ def socket_path():
     base = os.environ.get("XDG_RUNTIME_DIR")
     if not base:
         # e.g. under sudo. Don't trust a directory someone else may have created.
-        base = f"/tmp/btw5-switch-{os.getuid()}"
+        base = f"/tmp/btwctl-{os.getuid()}"
         try:
             os.mkdir(base, 0o700)
         except FileExistsError:
@@ -42,7 +42,13 @@ def socket_path():
             return None
     if not _private_dir(base):
         return None
-    return os.path.join(base, "btw5-switch.sock")
+    return os.path.join(base, "btwctl.sock")
+
+
+def legacy_socket_path():
+    """Where btwctl's predecessor, btw5-switch 0.6, shared the dongle (same protocol)."""
+    base = os.environ.get("XDG_RUNTIME_DIR")
+    return os.path.join(base, "btw5-switch.sock") if base and _private_dir(base) else None
 
 
 class SocketTransport:
@@ -106,8 +112,11 @@ def default_transport(busy_wait=3.0):
     from . import device
     path = socket_path()
     # the broker shares the auto-detected dongle; an explicit --device is always opened directly
-    if device.auto_detect() and path and broker_available(path):
-        return SocketTransport(path)
+    if device.auto_detect():
+        # (the legacy socket: an old btw5-switch service still running after an upgrade)
+        for p in (path, legacy_socket_path()):
+            if p and broker_available(p):
+                return SocketTransport(p)
     return UsbTransport(busy_wait=busy_wait)
 
 
@@ -127,7 +136,7 @@ class Broker:
         if not self.path:
             raise OSError(errno.EACCES, "no private directory for the broker socket")
         if broker_available(self.path):
-            raise OSError(errno.EADDRINUSE, f"another btw5-switch is already sharing the dongle ({self.path})")
+            raise OSError(errno.EADDRINUSE, f"another btwctl is already sharing the dongle ({self.path})")
         try:
             os.unlink(self.path)  # stale socket from a crashed run
         except FileNotFoundError:

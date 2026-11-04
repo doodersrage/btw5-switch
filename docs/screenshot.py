@@ -9,9 +9,9 @@ import sys
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from btw5 import protocol as P
-from btw5.qt import QtWidgets
-from btw5.window import Window
+from btwctl import protocol as P
+from btwctl.qt import QtWidgets
+from btwctl.window import Window
 from tests import fakes
 from tests.fakes import FakeDongle, report, slot_frame, ack
 
@@ -38,11 +38,11 @@ class Demo(FakeDongle):
 
 import tempfile
 os.environ["XDG_CONFIG_HOME"] = tempfile.mkdtemp()   # a clean config, not yours
-import btw5.service
-btw5.service.is_active = lambda: True
-import btw5.broker
-btw5.broker.default_transport = lambda *a, **k: Demo()
-app = QtWidgets.QApplication([]); app.setDesktopFileName("btw5-switch")
+import btwctl.service
+btwctl.service.is_active = lambda: True
+import btwctl.broker
+btwctl.broker.default_transport = lambda *a, **k: Demo()
+app = QtWidgets.QApplication([]); app.setDesktopFileName("btwctl")
 w = Window(); w.show()
 end = time.time() + 6
 while time.time() < end and not (w.info_loaded and not w.worker.busy):

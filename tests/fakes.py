@@ -2,7 +2,7 @@
 
 import time
 
-from btw5 import protocol as P
+from btwctl import protocol as P
 
 HEADSET = bytes.fromhex("ba52e90980c3")
 NAME = b"MOMENTUM 4"

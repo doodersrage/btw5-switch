@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=BT-W5 Switch (tray icon)
+Name=BT-W Control (tray icon)
 GenericName=Bluetooth audio dongle control
 Comment=Tray icon for the Creative BT-W5: aptX mode, HFP and headset switching
-Exec=btw5-switch tray
+Exec=btwctl tray
 Icon=audio-headphones
 Terminal=false
 Categories=Settings;HardwareSettings;

@@ -1,8 +1,8 @@
 import pytest
 
-from btw5 import protocol as P
-from btw5.automation import Automation, running_games
-from btw5.config import DEFAULT_GAME_APPS, Config
+from btwctl import protocol as P
+from btwctl.automation import Automation, running_games
+from btwctl.config import DEFAULT_GAME_APPS, Config
 from tests.fakes import HEADSET, conn_frame
 
 X3 = bytes.fromhex("68001abc5ceb")

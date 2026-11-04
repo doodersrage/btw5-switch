@@ -23,7 +23,7 @@ class Tray:
         self.window = None
 
         self.icon = QSystemTrayIcon(theme_icon())
-        self.icon.setToolTip("BT-W5")
+        self.icon.setToolTip("BT-W Control")
         self.menu = QMenu()
         self.icon.setContextMenu(self.menu)
         self.icon.activated.connect(self.on_activated)
@@ -43,10 +43,10 @@ class Tray:
     def act(self, what, fn, refresh_after_ms=500):
         def done(r):
             if isinstance(r, Exception):
-                self.icon.showMessage("BT-W5", f"{what} failed: {r}",
+                self.icon.showMessage("BT-W Control", f"{what} failed: {r}",
                                       QSystemTrayIcon.MessageIcon.Warning, 5000)
             elif isinstance(r, int) and r not in (P.STATUS_OK,):
-                self.icon.showMessage("BT-W5", f"The dongle rejected: {what} (status 0x{r:02x})",
+                self.icon.showMessage("BT-W Control", f"The dongle rejected: {what} (status 0x{r:02x})",
                                       QSystemTrayIcon.MessageIcon.Warning, 5000)
             QTimer.singleShot(refresh_after_ms, self.refresh)
         self.worker.with_device(fn, done)
@@ -61,8 +61,8 @@ class Tray:
         cfg.save()
         from . import service
         if on and service.is_active() is False:
-            self.icon.showMessage("BT-W5", "Game mode needs the background service. Turn it on in the "
-                                  "BT-W5 Switch window.", QSystemTrayIcon.MessageIcon.Information, 8000)
+            self.icon.showMessage("BT-W Control", "Game mode needs the background service. Turn it on in the "
+                                  "BT-W Control window.", QSystemTrayIcon.MessageIcon.Information, 8000)
 
     def open_window(self):
         from .window import Window
@@ -84,7 +84,7 @@ class Tray:
     def on_state(self, r):
         if isinstance(r, Exception):
             self.state = None
-            msg = "BT-W5 not plugged in" if isinstance(r, NotFound) else str(r)
+            msg = "No BT-W dongle plugged in" if isinstance(r, NotFound) else str(r)
             if isinstance(r, BTW5Error) and not isinstance(r, NotFound) and "in use" in msg:
                 return  # someone else had it for a moment; keep the last state
             self.icon.setToolTip(msg)
@@ -95,22 +95,22 @@ class Tray:
         if prev is not None:
             ph = prev["headset"]
             if h and (not ph or ph["address"] != h["address"]):
-                self.icon.showMessage("BT-W5", f"Connected: {h['name'] or h['address']}",
+                self.icon.showMessage("BT-W Control", f"Connected: {h['name'] or h['address']}",
                                       theme_icon(), 4000)
             elif ph and not h:
-                self.icon.showMessage("BT-W5", f"Disconnected: {ph['name'] or ph['address']}",
+                self.icon.showMessage("BT-W Control", f"Disconnected: {ph['name'] or ph['address']}",
                                       theme_icon(), 4000)
         tip = [f"{h['name'] or h['address']}" if h else "No headset connected"]
         if r["aptx_mode"]:
             tip.append(f"aptX Adaptive {r['aptx_mode']}")
         tip.append(f"HFP {'on' if r['hfp'] else 'off'}, auto HFP {'on' if r['auto_hfp'] else 'off'}")
-        self.icon.setToolTip("BT-W5\n" + "\n".join(tip))
+        self.icon.setToolTip("BT-W Control\n" + "\n".join(tip))
         self.build_menu()
 
     def build_menu(self):
         m = self.menu
         m.clear()
-        m.addAction(theme_icon("configure", "preferences-system"), "Open BT-W5 Switch…").triggered.connect(
+        m.addAction(theme_icon("configure", "preferences-system"), "Open BT-W Control…").triggered.connect(
             self.open_window)
         m.addSeparator()
         st = self.state
@@ -181,11 +181,11 @@ class Tray:
 
 def main(interval=15):
     app = QtWidgets.QApplication(sys.argv[:1])
-    app.setApplicationName("btw5-switch")
-    app.setDesktopFileName("btw5-switch")
+    app.setApplicationName("btwctl")
+    app.setDesktopFileName("btwctl")
     app.setQuitOnLastWindowClosed(False)
     if not QSystemTrayIcon.isSystemTrayAvailable():
-        sys.exit("No system tray available (try 'btw5-switch gui' for a window).")
+        sys.exit("No system tray available (try 'btwctl gui' for a window).")
     tray = Tray(app, interval)
     run_app(app, tray.quit)
 

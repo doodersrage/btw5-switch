@@ -1,0 +1,47 @@
+# fish completion for btwctl
+set -l cmds status info dump ll hq toggle hfp auto-hfp scan disconnect pair paired prefer game-mode forget monitor waybar gui tray raw
+complete -c btwctl -f
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -s v -l verbose -d 'hex-dump USB traffic'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -s V -l version -d 'show version'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a status -d 'show headset and settings'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a info -d 'firmware version and serial'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a dump -d 'every readable register'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a ll -d 'aptX Adaptive Low Latency'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a hq -d 'aptX Adaptive High Quality'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a toggle -d 'switch between LL and HQ'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a hfp -d 'headset microphone on/off'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a auto-hfp -d 'automatic HFP switching on/off'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a scan -d 'list nearby headsets'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a disconnect -d 'disconnect the headset'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a pair -d 'connect to a headset'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a paired -d 'list remembered headsets'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a prefer -d 'settings per headset'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a game-mode -d 'Low Latency while gaming'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -l notify -d 'result as a notification'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -l device -r -d 'USB ID (VID:PID)'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a forget -d 'forget all paired headsets'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a monitor -d 'watch for changes'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a waybar -d 'status bar JSON'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a gui -d 'settings window'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a tray -d 'system tray icon'
+complete -c btwctl -n "not __fish_seen_subcommand_from $cmds" -a raw -d 'send a raw command'
+
+complete -c btwctl -n "__fish_seen_subcommand_from status info dump scan paired" -l json -d 'machine-readable output'
+complete -c btwctl -n "__fish_seen_subcommand_from paired" -l names -d 'names only'
+complete -c btwctl -n "__fish_seen_subcommand_from hfp auto-hfp" -a 'on off'
+complete -c btwctl -n "__fish_seen_subcommand_from pair prefer" -a '(btwctl paired --names 2>/dev/null)' -d 'paired headset'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -a current -d 'the connected headset'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l aptx -x -a 'hq ll'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l hfp -x -a 'on off'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l auto-hfp -x -a 'on off'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l current -d 'remember current settings'
+complete -c btwctl -n "__fish_seen_subcommand_from prefer" -l clear -d 'forget preferences'
+complete -c btwctl -n "__fish_seen_subcommand_from game-mode" -a 'status on off add remove'
+complete -c btwctl -n "__fish_seen_subcommand_from pair" -l timeout -r
+complete -c btwctl -n "__fish_seen_subcommand_from forget" -s y -l yes -d "don't ask"
+complete -c btwctl -n "__fish_seen_subcommand_from monitor" -l notify -d 'desktop notifications'
+complete -c btwctl -n "__fish_seen_subcommand_from monitor" -l all -d 'print every report'
+complete -c btwctl -n "__fish_seen_subcommand_from monitor" -l no-reconnect -d 'exit when the dongle disappears'
+complete -c btwctl -n "__fish_seen_subcommand_from monitor" -l no-automation -d 'no preferences or game mode'
+complete -c btwctl -n "__fish_seen_subcommand_from waybar tray" -l interval -r
+complete -c btwctl -n "__fish_seen_subcommand_from raw" -l listen -r

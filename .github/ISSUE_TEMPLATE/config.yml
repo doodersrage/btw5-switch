@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: Troubleshooting
-    url: https://github.com/doodersrage/btw5-switch#troubleshooting
+    url: https://github.com/doodersrage/btwctl#troubleshooting
     about: Common problems (permission denied, not found, no tray icon) and their fixes

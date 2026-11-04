@@ -1,13 +1,13 @@
-#compdef btw5-switch
-# zsh completion for btw5-switch
+#compdef btwctl btw5-switch
+# zsh completion for btwctl
 
-_btw5_paired_names() {
+_btwctl_paired_names() {
     local -a names
-    names=(${(f)"$(btw5-switch paired --names 2>/dev/null)"})
+    names=(${(f)"$(btwctl paired --names 2>/dev/null)"})
     _describe -t headsets 'paired headset' names
 }
 
-_btw5-switch() {
+_btwctl() {
     local -a commands
     commands=(
         'status:show connected headset, aptX, HFP and auto-HFP settings'
@@ -40,18 +40,18 @@ _btw5-switch() {
         '1:command:->command' \
         '*::arg:->args'
     case $state in
-        command) _describe -t commands 'btw5-switch command' commands ;;
+        command) _describe -t commands 'btwctl command' commands ;;
         args)
             case $words[1] in
                 status|info|dump) _arguments '--json[machine-readable output]' ;;
                 paired) _arguments '--json[machine-readable output]' '--names[names only]' ;;
                 scan) _arguments '--json[machine-readable output]' '1:seconds:' ;;
                 hfp|auto-hfp) _arguments '1:state:(on off)' ;;
-                pair) _arguments '--timeout[seconds to wait]:seconds:' '1:headset:_btw5_paired_names' ;;
+                pair) _arguments '--timeout[seconds to wait]:seconds:' '1:headset:_btwctl_paired_names' ;;
                 prefer) _arguments '--aptx[aptX mode]:mode:(hq ll)' '--hfp[microphone]:state:(on off)' \
                                    '--auto-hfp[auto mic switching]:state:(on off)' '--current[remember current settings]' \
                                    '--clear[forget preferences]' '--json[machine-readable output]' \
-                                   '1:headset:{_btw5_paired_names; compadd current}' ;;
+                                   '1:headset:{_btwctl_paired_names; compadd current}' ;;
                 game-mode) _arguments '1:action:(status on off add remove)' '2:pattern:' ;;
                 forget) _arguments '(-y --yes)'{-y,--yes}'[do not ask]' ;;
                 monitor) _arguments '--notify[desktop notifications]' '--all[print every report]' \
@@ -63,4 +63,4 @@ _btw5-switch() {
     esac
 }
 
-_btw5-switch "$@"
+_btwctl "$@"

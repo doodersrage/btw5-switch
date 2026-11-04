@@ -1,5 +1,5 @@
-# bash completion for btw5-switch
-_btw5_switch() {
+# bash completion for btwctl
+_btwctl() {
     local cur prev cmd i
     cur=${COMP_WORDS[COMP_CWORD]}
     prev=${COMP_WORDS[COMP_CWORD-1]}
@@ -45,8 +45,8 @@ _btw5_switch() {
                 local name
                 while IFS= read -r name; do
                     [[ ${name,,} == "${cur,,}"* ]] && COMPREPLY+=("$(printf %q "$name")")
-                done < <(btw5-switch paired --names 2>/dev/null)
+                done < <(btwctl paired --names 2>/dev/null)
             fi ;;
     esac
 }
-complete -F _btw5_switch btw5-switch
+complete -F _btwctl btwctl btw5-switch   # (btw5-switch: the name before 0.7)

@@ -3,15 +3,15 @@ import time
 
 import pytest
 
-from btw5 import broker
-from btw5 import protocol as P
-from btw5.device import BTW5, Gone, read_status
+from btwctl import broker
+from btwctl import protocol as P
+from btwctl.device import BTW5, Gone, read_status
 from tests.fakes import FakeDongle
 
 
 @pytest.fixture
 def sock(tmp_path):
-    return str(tmp_path / "btw5.sock")
+    return str(tmp_path / "btwctl.sock")
 
 
 def serve(b, seen, stop):
@@ -67,13 +67,13 @@ def test_stale_socket_is_replaced(sock):
 
 
 def test_socket_transport_without_broker(sock):
-    from btw5.device import NotFound
+    from btwctl.device import NotFound
     with pytest.raises(NotFound):
         broker.SocketTransport(sock).open()
 
 
 def test_client_that_stops_reading_does_not_stall_others(sock):
-    """A suspended 'btw5-switch scan' (Ctrl-Z) used to freeze the broker for everyone."""
+    """A suspended 'btwctl scan' (Ctrl-Z) used to freeze the broker for everyone."""
     import socket as so
 
     from tests.fakes import conn_frame
@@ -111,7 +111,7 @@ def test_unsafe_socket_dir_is_refused(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(shared))
     assert broker.socket_path() is None
     shared.chmod(0o700)
-    assert broker.socket_path() == str(shared / "btw5-switch.sock")
+    assert broker.socket_path() == str(shared / "btwctl.sock")
 
 
 def test_no_safe_socket_dir_falls_back_to_usb(monkeypatch):

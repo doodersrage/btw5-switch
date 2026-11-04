@@ -1,14 +1,15 @@
-# Desktop notifications for BT-W5 headset/setting changes.
-# Enable with:  systemctl --user enable --now btw5-switch-monitor.service
-# While it runs, other btw5-switch commands talk to the dongle through it.
+# The background service's name before btw5-switch was renamed btwctl (0.7).
+# Kept so a service enabled under the old name keeps working after the upgrade.
+# New setups: systemctl --user enable --now btwctl-monitor.service
+# (The settings window's "Start background service" button switches over.)
 [Unit]
-Description=Creative BT-W5 event monitor
+Description=Creative BT-W dongle event monitor (old name; see btwctl-monitor.service)
 After=graphical-session.target
 PartOf=graphical-session.target
+Conflicts=btwctl-monitor.service
 
 [Service]
-# Through sh so it also finds a pipx install in ~/.local/bin ($$ = literal $ for systemd)
-ExecStart=/bin/sh -c 'PATH="$$HOME/.local/bin:$$PATH" exec btw5-switch monitor --notify'
+ExecStart=/bin/sh -c 'PATH="$$HOME/.local/bin:$$PATH" exec btwctl monitor --notify'
 Restart=on-failure
 RestartSec=5
 

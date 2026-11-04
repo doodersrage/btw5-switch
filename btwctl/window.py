@@ -1,6 +1,6 @@
-"""The BT-W5 Switch window: status, audio settings, paired headsets, pairing, device info.
+"""The BT-W Control window: status, audio settings, paired headsets, pairing, device info.
 
-Runs standalone ('btw5-switch gui') or opened from the tray icon, sharing its
+Runs standalone ('btwctl gui') or opened from the tray icon, sharing its
 worker. All dongle I/O goes through the Worker thread (see qt.py).
 """
 
@@ -50,7 +50,7 @@ class Window(W.QMainWindow):
         self.stop_scan = threading.Event()
         self.scan_rows = {}   # address bytes -> table row
 
-        self.setWindowTitle("BT-W5 Switch")
+        self.setWindowTitle("BT-W Control")
         self.setWindowIcon(theme_icon())
         self.build()
         self.worker.busy_changed.connect(lambda _busy: self.update_enabled())
@@ -75,7 +75,7 @@ class Window(W.QMainWindow):
         icon.setPixmap(theme_icon().pixmap(48, 48))
         head.addWidget(icon)
         titles = W.QVBoxLayout()
-        self.title = W.QLabel("BT-W5")
+        self.title = W.QLabel("BT-W Control")
         font = self.title.font()
         font.setPointSizeF(font.pointSizeF() * 1.4)
         font.setBold(True)
@@ -225,7 +225,7 @@ class Window(W.QMainWindow):
         self.model = W.QLabel("–")
         self.model_note = W.QLabel(
             "Reported to work by users but not tested here. Please "
-            "<a href='https://github.com/doodersrage/btw5-switch/issues/new/choose'>report</a> what works.")
+            "<a href='https://github.com/doodersrage/btwctl/issues/new/choose'>report</a> what works.")
         self.model_note.setWordWrap(True)
         self.model_note.setSizePolicy(W.QSizePolicy.Policy.Expanding, W.QSizePolicy.Policy.Preferred)
         self.model_note.setOpenExternalLinks(True)
@@ -316,7 +316,7 @@ class Window(W.QMainWindow):
                 self.title.setText("No dongle found")
                 self.subtitle.setText("Plug in the dongle (it also disappears briefly after HFP changes).")
             else:
-                self.title.setText("BT-W5")
+                self.title.setText("BT-W Control")
                 self.subtitle.setText(str(r))
             self.update_enabled()
             return
@@ -397,7 +397,7 @@ class Window(W.QMainWindow):
                                        "game mode only work while it runs.")
         else:
             self.service_label.setText("Headset settings and game mode are applied by "
-                                       "'btw5-switch monitor'; keep it running.")
+                                       "'btwctl monitor'; keep it running.")
 
     def update_enabled(self):
         ok = self.state is not None
@@ -687,9 +687,9 @@ class Window(W.QMainWindow):
 
 def main():
     app = W.QApplication(sys.argv[:1])
-    app.setApplicationName("btw5-switch")
-    app.setApplicationDisplayName("BT-W5 Switch")
-    app.setDesktopFileName("btw5-switch")
+    app.setApplicationName("btwctl")
+    app.setApplicationDisplayName("BT-W Control")
+    app.setDesktopFileName("btwctl")
     w = Window()
     w.show()
 

@@ -2,6 +2,8 @@
 
 ## 0.7 (not released yet)
 
+- **Renamed to btwctl** (it was btw5-switch), since it now supports more than the BT-W5. The window is now "BT-W Control". Upgrading needs nothing else: the packages replace btw5-switch, the `btw5-switch` command still works, settings move over automatically, and a background service enabled under the old name keeps running (the window's "Start background service" switches it to `btwctl-monitor.service`).
+
 - **Creative BT-W6** (`041e:3132`) is found automatically, with access without sudo. aptX switching has been reported to work by a user; the rest is expected to but hasn't been confirmed. The model is shown by `info` and in the window.
 - Arch Linux package (`.pkg.tar.zst`) on the release page.
 

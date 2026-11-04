@@ -46,7 +46,7 @@ jobs:
         with: {path: dist, merge-multiple: true}
       - name: Check the tag matches the version
         run: |
-          v=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' btw5/__init__.py)
+          v=$(sed -n 's/^__version__ = "\(.*\)"/\1/p' btwctl/__init__.py)
           test "v$v" = "$GITHUB_REF_NAME"
       - name: Release notes from CHANGELOG.md
         run: |
@@ -54,13 +54,13 @@ jobs:
           cat >> notes.md <<'MD'
 
           ### Install
-          - **Arch Linux**: download the `.pkg.tar.zst` below, then `sudo pacman -U ./btw5-switch-*-any.pkg.tar.zst`
-          - **Debian / Ubuntu**: download the `.deb` below, then `sudo apt install ./btw5-switch_*_all.deb`
-          - **Fedora**: download the `.rpm` below, then `sudo dnf install ./btw5-switch-*.noarch.rpm`
-          - **Others**: see the [README](https://github.com/doodersrage/btw5-switch#install)
+          - **Arch Linux**: download the `.pkg.tar.zst` below, then `sudo pacman -U ./btwctl-*-any.pkg.tar.zst`
+          - **Debian / Ubuntu**: download the `.deb` below, then `sudo apt install ./btwctl_*_all.deb`
+          - **Fedora**: download the `.rpm` below, then `sudo dnf install ./btwctl-*.noarch.rpm`
+          - **Others**: see the [README](https://github.com/doodersrage/btwctl#install)
 
           Then unplug the BT-W5 and plug it back in.
           MD
-      - run: gh release create "$GITHUB_REF_NAME" dist/* --title "btw5-switch ${GITHUB_REF_NAME#v}" --notes-file notes.md
+      - run: gh release create "$GITHUB_REF_NAME" dist/* --title "btwctl ${GITHUB_REF_NAME#v}" --notes-file notes.md
         env:
           GH_TOKEN: ${{ github.token }}

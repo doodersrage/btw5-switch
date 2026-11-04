@@ -1,4 +1,4 @@
-"""btw5-switch command line interface."""
+"""btwctl command line interface."""
 
 import argparse
 import errno
@@ -160,10 +160,10 @@ def cmd_scan(d, args):
     if connected:
         return
     if found:
-        print("\nConnect with:  btw5-switch pair <address>   (while the headset is still in pairing mode)")
+        print("\nConnect with:  btwctl pair <address>   (while the headset is still in pairing mode)")
     else:
         print("No devices found. (The dongle sometimes connects to a headset in pairing mode by "
-              "itself; check 'btw5-switch status'.)")
+              "itself; check 'btwctl status'.)")
 
 
 def resolve_headset(d, target):
@@ -182,7 +182,7 @@ def resolve_headset(d, target):
         return matches[0][1]
     if not matches:
         sys.exit(f"'{target}' is neither an address nor the name of a paired headset "
-                 "(see 'btw5-switch paired').")
+                 "(see 'btwctl paired').")
     sys.exit(f"'{target}' matches several paired headsets: "
              + ", ".join(P.headset_label(a, n) for _, a, n in matches))
 
@@ -197,10 +197,10 @@ def cmd_pair(d, args):
     if result == "rejected":
         sys.exit("The dongle refused to connect (status 0x80): it can't reach the headset.\n"
                  "Make sure the headset is on and not connected to another device, or put it\n"
-                 "in pairing mode, run 'btw5-switch scan', then pair while it's still listed.")
+                 "in pairing mode, run 'btwctl scan', then pair while it's still listed.")
     if result == "disconnected":
         print("Headset disconnected.")
-    sys.exit("No connection confirmed (check 'btw5-switch status', or try again with the headset "
+    sys.exit("No connection confirmed (check 'btwctl status', or try again with the headset "
              "in pairing mode).")
 
 
@@ -244,7 +244,7 @@ def cmd_raw(d, args):
 
 def notify(summary, body=""):
     if shutil.which("notify-send"):
-        subprocess.run(["notify-send", "-a", "BT-W5", "-i", "audio-headphones", summary, body],
+        subprocess.run(["notify-send", "-a", "BT-W Control", "-i", "audio-headphones", summary, body],
                        check=False)
 
 
@@ -305,7 +305,7 @@ def cmd_monitor(args):
         except OSError as e:
             if e.errno == errno.EADDRINUSE:
                 return  # another monitor won the race; listen along next round
-            say(f"not sharing the dongle ({e.strerror}); other btw5-switch commands will report it busy")
+            say(f"not sharing the dongle ({e.strerror}); other btwctl commands will report it busy")
             ask_state(t.write)
             while True:
                 if raw := t.read(500):
@@ -375,9 +375,9 @@ def waybar_state():
         with BTW5(transport=None) as d:
             st = read_status(d)
     except NotFound:
-        return {"text": "", "class": "absent", "tooltip": "BT-W5 not plugged in"}
+        return {"text": "", "class": "absent", "tooltip": "No BT-W dongle plugged in"}
     except BTW5Error as e:
-        return {"text": "BT-W5 ?", "class": "error", "tooltip": str(e)}
+        return {"text": "BT-W ?", "class": "error", "tooltip": str(e)}
     h = st["headset"]
     mode = st["aptx_mode"]
     text = (h["name"] or h["address"]) if h else "no headset"
@@ -416,7 +416,7 @@ def cmd_prefer(args):
         if args.json:
             return emit_json([{"address": a, "name": n, **p} for a, n, p in prefs])
         if not prefs:
-            print("No headset preferences yet. Example:  btw5-switch prefer momentum --aptx hq --hfp off")
+            print("No headset preferences yet. Example:  btwctl prefer momentum --aptx hq --hfp off")
         for addr, name, p in prefs:
             print(f"  {name or addr}  ({addr}):  " + (", ".join(f"{k} {v}" for k, v in p.items()) or "nothing"))
         return
@@ -464,7 +464,7 @@ def cmd_game_mode(args):
         cfg.game_mode = args.action == "on"
     elif args.action == "add":
         if not args.pattern:
-            sys.exit("Usage: btw5-switch game-mode add <part of a game's command line>")
+            sys.exit("Usage: btwctl game-mode add <part of a game's command line>")
         cfg.game_apps = cfg.game_apps + [args.pattern]
     elif args.action == "remove":
         apps = cfg.game_apps
@@ -504,7 +504,7 @@ def run_notifying(args):
             main_body(args)
     except SystemExit as e:
         if e.code not in (None, 0):
-            notify("BT-W5", str(e.code) if isinstance(e.code, str) else "Failed")
+            notify("BT-W Control", str(e.code) if isinstance(e.code, str) else "Failed")
             raise
     text = out.getvalue().strip()
     print(text)
@@ -515,7 +515,7 @@ def run_notifying(args):
 
 def build_parser():
     ap = argparse.ArgumentParser(
-        prog="btw5-switch",
+        prog="btwctl",
         description="Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles.",
         epilog="Volume is a standard USB Audio control: use your desktop's volume "
                "settings, wpctl or alsamixer.")
@@ -581,7 +581,7 @@ def build_parser():
             device=False)
     p.add_argument("action", nargs="?", default="status", choices=["status", "on", "off", "add", "remove"])
     p.add_argument("pattern", nargs="?", help="for add/remove: part of a game's command line")
-    add("gui", cmd_gui, "open the BT-W5 Switch window (needs PyQt6 or PySide6)", device=False)
+    add("gui", cmd_gui, "open the BT-W Control window (needs PyQt6 or PySide6)", device=False)
     p = add("tray", cmd_tray, "run a system tray icon (needs PyQt6 or PySide6)", device=False)
     p.add_argument("--interval", type=float, default=15, help="seconds between status refreshes")
 

@@ -1,6 +1,6 @@
-# btw5-switch - control the Creative BT-W5 and BT-W6 Bluetooth audio dongles on Linux
+# btwctl - control the Creative BT-W5 and BT-W6 Bluetooth audio dongles on Linux
 
-[![tests](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml)
+[![tests](https://github.com/doodersrage/btwctl/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btwctl/actions/workflows/test.yml)
 
 Creative only makes its app for the BT-W5 (and BT-W6) for Windows and macOS. This does the same on Linux:
 switch aptX Adaptive between High Quality and Low Latency, turn the headset microphone (HFP) on or off,
@@ -8,7 +8,9 @@ pair new headsets and switch between paired ones, and get a notification when a 
 
 It comes with a settings window, a system tray icon, a command line tool and a status bar module.
 
-![The BT-W5 Switch window](docs/window.png)
+*btwctl was called **btw5-switch** until version 0.7; see [Upgrading from btw5-switch](#upgrading-from-btw5-switch).*
+
+![The BT-W Control window](docs/window.png)
 
 ## What you need
 
@@ -23,19 +25,19 @@ This tool is for the dongle's settings and pairing.
 
 ### Arch Linux and derivatives (Manjaro, EndeavourOS, CachyOS)
 
-Download `btw5-switch-…-any.pkg.tar.zst` from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest), then:
+Download `btwctl-…-any.pkg.tar.zst` from the [latest release](https://github.com/doodersrage/btwctl/releases/latest), then:
 
 ```sh
 sudo pacman -S --needed python-pyqt6        # for the window and tray icon
-sudo pacman -U ./btw5-switch-*-any.pkg.tar.zst
+sudo pacman -U ./btwctl-*-any.pkg.tar.zst
 ```
 
 Or build it from source:
 
 ```sh
 sudo pacman -S --needed base-devel git python-pyqt6
-git clone https://github.com/doodersrage/btw5-switch
-cd btw5-switch
+git clone https://github.com/doodersrage/btwctl
+cd btwctl
 makepkg -si
 ```
 
@@ -43,18 +45,18 @@ Then **unplug the dongle and plug it back in**, so your user gets access to it.
 
 ### Debian, Ubuntu, Linux Mint, Pop!_OS
 
-Download `btw5-switch_…_all.deb` from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest), then:
+Download `btwctl_…_all.deb` from the [latest release](https://github.com/doodersrage/btwctl/releases/latest), then:
 
 ```sh
-sudo apt install ./btw5-switch_*_all.deb
+sudo apt install ./btwctl_*_all.deb
 ```
 
 ### Fedora
 
-Download `btw5-switch-….noarch.rpm` from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest), then:
+Download `btwctl-….noarch.rpm` from the [latest release](https://github.com/doodersrage/btwctl/releases/latest), then:
 
 ```sh
-sudo dnf install ./btw5-switch-*.noarch.rpm
+sudo dnf install ./btwctl-*.noarch.rpm
 ```
 
 ### Other distributions (or the latest code)
@@ -63,25 +65,25 @@ sudo dnf install ./btw5-switch-*.noarch.rpm
 # Debian/Ubuntu: sudo apt install git pipx libusb-1.0-0
 # Fedora:        sudo dnf install git pipx libusb1
 # others:        install git, pipx and libusb 1.0 with your package manager
-git clone https://github.com/doodersrage/btw5-switch
-cd btw5-switch
+git clone https://github.com/doodersrage/btwctl
+cd btwctl
 sudo ./install.sh
 ```
 
-`install.sh` puts the program in `/opt/btw5-switch` (with the `btw5-switch` command in `/usr/local/bin`) and adds the device access rule, app menu entries and shell completions.
+`install.sh` puts the program in `/opt/btwctl` (with the `btwctl` command in `/usr/local/bin`) and adds the device access rule, app menu entries and shell completions.
 It downloads PyUSB and PyQt6 for the window; add `--no-gui` if you only want the command line tool.
 
 Then **unplug the dongle and plug it back in**, so your user gets access to it.
 
 ## Getting started
 
-Open **BT-W5 Switch** from your application menu, or run `btw5-switch gui`.
+Open **BT-W Control** from your application menu, or run `btwctl gui`.
 You'll see the connected headset, its aptX mode and your paired headsets. Everything else is a click away.
 
-From a terminal, `btw5-switch status` shows the same:
+From a terminal, `btwctl status` shows the same:
 
 ```
-$ btw5-switch status
+$ btwctl status
 Headset            : MOMENTUM 4 (00:1b:66:a1:b2:c3)
 aptX Adaptive mode : High Quality
 HFP (headset mic)  : off
@@ -93,30 +95,30 @@ If that prints an error instead, see [Troubleshooting](#troubleshooting).
 ### Pairing a new headset
 
 1. Put the headset in pairing mode (usually: hold the power or Bluetooth button until the light flashes).
-2. In the window, click **Scan** (or run `btw5-switch scan`). This disconnects the current headset.
-3. Click **Pair** next to your headset (or run `btw5-switch pair <address>`) while it's still in pairing mode.
+2. In the window, click **Scan** (or run `btwctl scan`). This disconnects the current headset.
+3. Click **Pair** next to your headset (or run `btwctl pair <address>`) while it's still in pairing mode.
 
 Often the dongle doesn't even list the headset but connects to it straight away; the window then says so.
-The dongle remembers up to 4 headsets. To switch to another one later, click **Connect** next to it, or run `btw5-switch pair <name>`.
+The dongle remembers up to 4 headsets. To switch to another one later, click **Connect** next to it, or run `btwctl pair <name>`.
 
 ### Tray icon
 
-The tray icon shows the headset and settings when you hover over it. Left click switches between Low Latency and High Quality; its menu has the other settings, your paired headsets, and **Open BT-W5 Switch…**.
+The tray icon shows the headset and settings when you hover over it. Left click switches between Low Latency and High Quality; its menu has the other settings, your paired headsets, and **Open BT-W Control…**.
 
-Start it with **BT-W5 Switch (tray icon)** from the application menu, or `btw5-switch tray`. To start it automatically when you log in:
+Start it with **BT-W Control (tray icon)** from the application menu, or `btwctl tray`. To start it automatically when you log in:
 
 ```sh
 mkdir -p ~/.config/autostart
-cp /usr/share/applications/btw5-switch-tray.desktop ~/.config/autostart/
+cp /usr/share/applications/btwctl-tray.desktop ~/.config/autostart/
 ```
 
-- **KDE Plasma** may put new icons behind the ▲ arrow in the panel. To keep it visible: right-click the arrow → *Configure System Tray…* → *Entries* → set "btw5-switch" to *Always shown*.
+- **KDE Plasma** may put new icons behind the ▲ arrow in the panel. To keep it visible: right-click the arrow → *Configure System Tray…* → *Entries* → set "btwctl" to *Always shown*.
 - **GNOME** has no tray of its own. Install the *AppIndicator and KStatusNotifierItem Support* extension (Ubuntu has it already), or use the window instead.
 
 ### Notifications
 
 ```sh
-systemctl --user enable --now btw5-switch-monitor.service
+systemctl --user enable --now btwctl-monitor.service
 ```
 
 shows a desktop notification whenever a headset connects or disconnects or a setting changes.
@@ -128,24 +130,24 @@ Tick **Use these settings whenever MOMENTUM 4 connects** in the window, and the 
 From a terminal:
 
 ```sh
-btw5-switch prefer momentum --aptx hq --hfp off   # set some
-btw5-switch prefer current --current              # remember the connected headset's current settings
-btw5-switch prefer                                # list them
-btw5-switch prefer momentum --clear               # forget them
+btwctl prefer momentum --aptx hq --hfp off   # set some
+btwctl prefer current --current              # remember the connected headset's current settings
+btwctl prefer                                # list them
+btwctl prefer momentum --clear               # forget them
 ```
 
 ### Game mode
 
 With game mode on, the dongle switches to **aptX Low Latency** while a game is running and back to the previous mode when you quit.
-Turn it on in the window (**Automation**), the tray menu, or with `btw5-switch game-mode on`.
+Turn it on in the window (**Automation**), the tray menu, or with `btwctl game-mode on`.
 
 A program counts as a game if its command line contains one of the listed words. By default these cover Steam games (native and Proton), gamescope, Lutris and Heroic.
-Add your own with `btw5-switch game-mode add minecraft` or in the window. `btw5-switch game-mode` shows the list and which ones are running right now.
+Add your own with `btwctl game-mode add minecraft` or in the window. `btwctl game-mode` shows the list and which ones are running right now.
 
 ### Keyboard shortcuts and quick actions
 
-Right-click **BT-W5 Switch** in the application menu for Low Latency, High Quality and Toggle.
-For a keyboard shortcut, add a custom shortcut that runs `btw5-switch --notify toggle` (or `ll` / `hq`):
+Right-click **BT-W Control** in the application menu for Low Latency, High Quality and Toggle.
+For a keyboard shortcut, add a custom shortcut that runs `btwctl --notify toggle` (or `ll` / `hq`):
 - **KDE Plasma**: *System Settings → Keyboard → Shortcuts → Add New → Command or Script*
 - **GNOME**: *Settings → Keyboard → View and Customize Shortcuts → Custom Shortcuts*
 
@@ -154,36 +156,36 @@ For a keyboard shortcut, add a custom shortcut that runs `btw5-switch --notify t
 ## Command line
 
 ```
-btw5-switch status              # connected headset, aptX mode, HFP and auto-HFP settings
-btw5-switch ll | hq             # aptX Adaptive Low Latency / High Quality
-btw5-switch toggle              # switch between the two
-btw5-switch hfp on|off          # headset microphone (HFP); audio drops for a few seconds
-btw5-switch auto-hfp on|off     # switch to the microphone automatically when an app uses it
-btw5-switch paired              # list the 4 pairing slots
-btw5-switch pair momentum       # connect to a paired headset by (part of) its name
-btw5-switch scan [seconds]      # disconnect the headset and list nearby headsets (default 15 s)
-btw5-switch pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
-btw5-switch disconnect          # disconnect the current headset
-btw5-switch forget              # forget all paired headsets (asks first; -y to skip)
-btw5-switch info                # firmware version and serial number
-btw5-switch prefer [headset] [--aptx hq|ll] [--hfp on|off] [--auto-hfp on|off]
+btwctl status              # connected headset, aptX mode, HFP and auto-HFP settings
+btwctl ll | hq             # aptX Adaptive Low Latency / High Quality
+btwctl toggle              # switch between the two
+btwctl hfp on|off          # headset microphone (HFP); audio drops for a few seconds
+btwctl auto-hfp on|off     # switch to the microphone automatically when an app uses it
+btwctl paired              # list the 4 pairing slots
+btwctl pair momentum       # connect to a paired headset by (part of) its name
+btwctl scan [seconds]      # disconnect the headset and list nearby headsets (default 15 s)
+btwctl pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
+btwctl disconnect          # disconnect the current headset
+btwctl forget              # forget all paired headsets (asks first; -y to skip)
+btwctl info                # firmware version and serial number
+btwctl prefer [headset] [--aptx hq|ll] [--hfp on|off] [--auto-hfp on|off]
                                 # settings to apply whenever that headset connects
-btw5-switch game-mode [on|off|add|remove]   # Low Latency while a game runs
-btw5-switch gui                 # settings window
-btw5-switch tray                # system tray icon
-btw5-switch monitor [--notify]  # print (and notify about) headset and setting changes
-btw5-switch waybar              # status as JSON for a status bar
-btw5-switch dump                # every readable register (for bug reports)
-btw5-switch -v <command>        # also show the raw USB traffic
-btw5-switch --notify <command>  # show the result as a desktop notification
-btw5-switch --device 041e:XXXX <command>    # try another Creative dongle (see Supported dongles)
+btwctl game-mode [on|off|add|remove]   # Low Latency while a game runs
+btwctl gui                 # settings window
+btwctl tray                # system tray icon
+btwctl monitor [--notify]  # print (and notify about) headset and setting changes
+btwctl waybar              # status as JSON for a status bar
+btwctl dump                # every readable register (for bug reports)
+btwctl -v <command>        # also show the raw USB traffic
+btwctl --notify <command>  # show the result as a desktop notification
+btwctl --device 041e:XXXX <command>    # try another Creative dongle (see Supported dongles)
 ```
 
 `status`, `info`, `paired`, `scan` and `dump` take `--json`. Tab completion works in bash, zsh and fish, including headset names for `pair`.
 
 ### Status bar
 
-`btw5-switch waybar` prints `{"text": "MOMENTUM 4 · HQ", "class": "connected", "tooltip": ...}` for a waybar or polybar module.
+`btwctl waybar` prints `{"text": "MOMENTUM 4 · HQ", "class": "connected", "tooltip": ...}` for a waybar or polybar module.
 See [`contrib/waybar/`](contrib/waybar/) for a waybar module that toggles the aptX mode on click, and [`contrib/polybar.ini`](contrib/polybar.ini) for polybar.
 
 ## Troubleshooting
@@ -192,11 +194,11 @@ See [`contrib/waybar/`](contrib/waybar/) for a waybar module that toggles the ap
 : The dongle isn't plugged in, or is restarting: it disappears for a few seconds after changing HFP or forgetting headsets. Check with `lsusb -d 041e:3130`.
 
 **"Permission denied accessing the dongle"**
-: Unplug the dongle and plug it back in. If that doesn't help, the access rule isn't installed: check that `/usr/lib/udev/rules.d/70-btw5-switch.rules` exists (if not, run `makepkg -si` or `sudo ./install.sh` again), then run `sudo udevadm control --reload-rules` and re-plug.
-The rule gives access to whoever is logged in at the computer; over SSH, use `sudo btw5-switch ...`.
+: Unplug the dongle and plug it back in. If that doesn't help, the access rule isn't installed: check that `/usr/lib/udev/rules.d/70-btwctl.rules` exists (if not, run `makepkg -si` or `sudo ./install.sh` again), then run `sudo udevadm control --reload-rules` and re-plug.
+The rule gives access to whoever is logged in at the computer; over SSH, use `sudo btwctl ...`.
 
 **"The dongle is in use by another program"**
-: Another program holds the dongle. Usually that's Creative's app in a Windows VM with USB passthrough, or an old `btw5-switch` that's stuck (`pkill -f btw5-switch`).
+: Another program holds the dongle. Usually that's Creative's app in a Windows VM with USB passthrough, or an old `btwctl` that's stuck (`pkill -f btwctl`).
 
 **aptX Adaptive mode shows "not available"**
 : The connected headset doesn't use aptX Adaptive (for example it only supports SBC or AAC), or no headset is connected. The mode switch only works with aptX Adaptive headsets.
@@ -211,22 +213,33 @@ The rule gives access to whoever is logged in at the computer; over SSH, use `su
 : See the KDE and GNOME notes under [Tray icon](#tray-icon).
 
 **Game mode or per-headset settings don't do anything**
-: They're applied by the background service: check that it runs (`systemctl --user status btw5-switch-monitor.service`, or look at the Automation section in the window).
-For game mode, run `btw5-switch game-mode` while the game is running: if it says "Running now: none", add a word from the game's command line (see `ps aux`) with `btw5-switch game-mode add <word>`.
+: They're applied by the background service: check that it runs (`systemctl --user status btwctl-monitor.service`, or look at the Automation section in the window).
+For game mode, run `btwctl game-mode` while the game is running: if it says "Running now: none", add a word from the game's command line (see `ps aux`) with `btwctl game-mode add <word>`.
 
 **Something else**
-: Run the command with `-v` (for example `btw5-switch -v status`) and [open an issue](https://github.com/doodersrage/btw5-switch/issues) with the output and the output of `btw5-switch dump`. In the window, **Copy diagnostics** copies the same information.
+: Run the command with `-v` (for example `btwctl -v status`) and [open an issue](https://github.com/doodersrage/btwctl/issues) with the output and the output of `btwctl dump`. In the window, **Copy diagnostics** copies the same information.
 
 ## Updating and uninstalling
 
 Update:
-- Release packages (`.pkg.tar.zst`, `.deb`, `.rpm`): install the new package from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest) the same way.
-- From source: in the `btw5-switch` folder, run `git pull`, then `makepkg -si` (Arch) or `sudo ./install.sh`.
+- Release packages (`.pkg.tar.zst`, `.deb`, `.rpm`): install the new package from the [latest release](https://github.com/doodersrage/btwctl/releases/latest) the same way.
+- From source: in the `btwctl` folder, run `git pull`, then `makepkg -si` (Arch) or `sudo ./install.sh`.
 
-Uninstall: `sudo apt remove btw5-switch`, `sudo dnf remove btw5-switch` or `sudo pacman -R btw5-switch`; for `install.sh`, run `sudo ./install.sh --uninstall` in the `btw5-switch` folder.
-Your settings are in `~/.config/btw5-switch/`.
+Uninstall: `sudo apt remove btwctl`, `sudo dnf remove btwctl` or `sudo pacman -R btwctl`; for `install.sh`, run `sudo ./install.sh --uninstall` in the `btwctl` folder.
+Your settings are in `~/.config/btwctl/`.
 
-Either way, also remove `~/.config/autostart/btw5-switch-tray.desktop` if you set up the tray to start at login, and run `systemctl --user disable --now btw5-switch-monitor.service` if you enabled notifications.
+Either way, also remove `~/.config/autostart/btwctl-tray.desktop` if you set up the tray to start at login, and run `systemctl --user disable --now btwctl-monitor.service` if you enabled notifications.
+
+### Upgrading from btw5-switch
+
+Version 0.7 renamed btw5-switch to **btwctl**, since it now supports more than the BT-W5. Install btwctl like any update: the `.deb`, `.rpm` and Arch packages replace btw5-switch, and `install.sh` removes the old install. Nothing else is required:
+
+- `btw5-switch` still works as a command, so scripts, shortcuts and status bar modules keep running.
+- Your settings move to `~/.config/btwctl/` automatically.
+- A background service you enabled as `btw5-switch-monitor.service` keeps working. **Start background service** in the window switches it to the new name, or run:
+  `systemctl --user disable --now btw5-switch-monitor.service && systemctl --user enable --now btwctl-monitor.service`
+- If the tray starts at login, it keeps working too. To use the new launcher name:
+  `rm ~/.config/autostart/btw5-switch-tray.desktop && cp /usr/share/applications/btwctl-tray.desktop ~/.config/autostart/`
 
 ## Supported dongles
 
@@ -236,10 +249,10 @@ Either way, also remove `~/.config/autostart/btw5-switch-tray.desktop` if you se
 | Creative BT-W6 | `041e:3132` | aptX Low Latency / High Quality switching [reported to work](https://gist.github.com/RaphaelWimmer/0d0aab0bb361f6ca721de1896bc26876?permalink_comment_id=5351536) by a user. It speaks the same protocol, so the rest is expected to work too, but hasn't been confirmed |
 | Other Creative BT-W dongles (BT-W3, BT-W4, …) | ? | Unknown; see below |
 
-Both supported dongles are found automatically. **BT-W6 owners:** please [report](https://github.com/doodersrage/btw5-switch/issues/new/choose) what works, ideally with the output of `btw5-switch dump`.
+Both supported dongles are found automatically. **BT-W6 owners:** please [report](https://github.com/doodersrage/btwctl/issues/new/choose) what works, ideally with the output of `btwctl dump`.
 
-Other Creative BT-W dongles may speak the same protocol. If `btw5-switch` finds one, it says so; try it with `btw5-switch --device 041e:XXXX status` (the USB ID is in `lsusb | grep -i creative`). `dump` is read-only and safe.
-Please [open an issue](https://github.com/doodersrage/btw5-switch/issues/new/choose) ("Another Creative dongle") with what you find.
+Other Creative BT-W dongles may speak the same protocol. If `btwctl` finds one, it says so; try it with `btwctl --device 041e:XXXX status` (the USB ID is in `lsusb | grep -i creative`). `dump` is read-only and safe.
+Please [open an issue](https://github.com/doodersrage/btwctl/issues/new/choose) ("Another Creative dongle") with what you find.
 
 ## How it works
 
@@ -252,7 +265,7 @@ Instead, it acts as an USB audio device towards the computer and as Bluetooth ho
 ### Sharing the dongle
 
 Only one program can open the dongle's control interface at a time.
-While `btw5-switch monitor` runs (for example as the notification service), it shares the dongle over a Unix socket (`$XDG_RUNTIME_DIR/btw5-switch.sock`), and all other `btw5-switch` commands, the window, the tray and the status bar module go through it automatically.
+While `btwctl monitor` runs (for example as the notification service), it shares the dongle over a Unix socket (`$XDG_RUNTIME_DIR/btwctl.sock`), and all other `btwctl` commands, the window, the tray and the status bar module go through it automatically.
 Short-lived commands that find the dongle busy wait up to 3 seconds for it.
 
 ### Protocol
@@ -286,7 +299,7 @@ Seen but not yet understood (values on firmware 1.2.230511.1220; none of them ch
 `6b 09 00` → `01`, `6b 09 01` → `04`, `6b 09 02` → `75`, `6b 09 04` → `3c b3 6e 3d 00 02`, `6b 09 05` → `03`, `6b 01` → `01 01`,
 `09 00` → `2b 31 01 01 1e 04` (`041e` is Creative's vendor ID), `09 01 00` → `00 90 ad 3a 21 3c 04`, and the event `6b 06 07` after a scan starts or pairings are forgotten.
 The app also sends `07 01 02`, `10`, `26 01 05`, `2c 01 02` and `39 01 02`, which this dongle rejects with status `81` (probably meant for other Creative devices).
-`btw5-switch dump` prints all of these, so if you have a different firmware or headset, its output is very welcome in an issue.
+`btwctl dump` prints all of these, so if you have a different firmware or headset, its output is very welcome in an issue.
 
 ![](./btw5-wireshark.png)
 
@@ -294,13 +307,13 @@ The app also sends `07 01 02`, `10`, `26 01 05`, `2c 01 02` and `39 01 02`, whic
 
 ```sh
 python -m pytest            # protocol parsers against the capture, a fake dongle for the CLI and window
-./btw5-switch.py status     # run from the checkout without installing
+python -m btwctl status     # run from the checkout without installing
 python docs/screenshot.py docs/window.png   # regenerate the README screenshot
 ```
 
-Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB access, requests), `btw5/broker.py` (sharing the dongle), `btw5/automation.py` and `btw5/config.py` (per-headset settings, game mode), `btw5/cli.py`, `btw5/window.py` and `btw5/tray.py` (sharing `btw5/qt.py`).
+Code layout: `btwctl/protocol.py` (frames and parsers), `btwctl/device.py` (USB access, requests), `btwctl/broker.py` (sharing the dongle), `btwctl/automation.py` and `btwctl/config.py` (per-headset settings, game mode), `btwctl/cli.py`, `btwctl/window.py` and `btwctl/tray.py` (sharing `btwctl/qt.py`).
 `aur/` holds the release PKGBUILD, `packaging/` builds the `.deb` and `.rpm`.
-To release: update `CHANGELOG.md` and `btw5/__init__.py`, then push a tag like `v0.6`; GitHub Actions builds the packages and publishes the release.
+To release: update `CHANGELOG.md` and `btwctl/__init__.py`, then push a tag like `v0.6`; GitHub Actions builds the packages and publishes the release.
 
 ## Status
 

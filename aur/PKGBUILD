@@ -1,25 +1,29 @@
 # Maintainer: Robert McDowell <doodersrage@gmail.com>
 #
 # Release PKGBUILD for the AUR. To publish a new version:
-#   1. bump btw5/__init__.py, tag vX.Y and push the tag
+#   1. bump btwctl/__init__.py, tag vX.Y and push the tag
 #   2. set pkgver below, run `updpkgsums` and `makepkg --printsrcinfo > .SRCINFO`
-#   3. copy PKGBUILD, .SRCINFO and btw5-switch.install into the AUR git repo and push
-pkgname=btw5-switch
-pkgver=0.6
+#   3. copy PKGBUILD, .SRCINFO and btwctl.install into the AUR git repo and push
+pkgname=btwctl
+pkgver=0.7
 pkgrel=1
 pkgdesc="Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)"
 arch=('any')
-url="https://github.com/doodersrage/btw5-switch"
+url="https://github.com/doodersrage/btwctl"
 license=('MIT')
 depends=('python' 'python-pyusb')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
 checkdepends=('python-pytest')
 optdepends=('python-pyqt6: settings window and tray icon'
             'pyside6: settings window and tray icon, alternative to PyQt6'
-            'libnotify: desktop notifications (btw5-switch monitor --notify)')
-install=btw5-switch.install
+            'libnotify: desktop notifications (btwctl monitor --notify)')
+install=btwctl.install
+# btwctl was called btw5-switch before 0.7
+replaces=('btw5-switch')
+conflicts=('btw5-switch')
+provides=('btw5-switch')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('d33fb3232909c35a0d91e91d3dd2f36ceae8fb44b755cbd54286086947edba95')
+sha256sums=('SKIP')  # replace with `updpkgsums` once the v0.7 tag exists
 
 build() {
   cd "$pkgname-$pkgver"

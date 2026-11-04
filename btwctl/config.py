@@ -1,6 +1,6 @@
 """User settings: per-headset preferences and game mode.
 
-Stored as INI in $XDG_CONFIG_HOME/btw5-switch/config.ini, e.g.
+Stored as INI in $XDG_CONFIG_HOME/btwctl/config.ini, e.g.
 
     [game-mode]
     enabled = yes
@@ -13,11 +13,12 @@ Stored as INI in $XDG_CONFIG_HOME/btw5-switch/config.ini, e.g.
     hfp = off
     auto-hfp = off
 
-The background service ('btw5-switch monitor') applies them; see automation.py.
+The background service ('btwctl monitor') applies them; see automation.py.
 """
 
 import configparser
 import os
+import shutil
 
 from . import protocol as P
 
@@ -36,7 +37,15 @@ PREF_VALUES = {"aptx": ("hq", "ll"), "hfp": ("on", "off"), "auto-hfp": ("on", "o
 
 def config_path():
     base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-    return os.path.join(base, "btw5-switch", "config.ini")
+    path = os.path.join(base, "btwctl", "config.ini")
+    old = os.path.join(base, "btw5-switch", "config.ini")   # before the rename (0.6)
+    if not os.path.exists(path) and os.path.exists(old):
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            shutil.copy2(old, path)
+        except OSError:
+            return old
+    return path
 
 
 class Config:

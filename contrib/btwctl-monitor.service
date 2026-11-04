@@ -1,0 +1,16 @@
+# Desktop notifications for BT-W5 headset/setting changes.
+# Enable with:  systemctl --user enable --now btwctl-monitor.service
+# While it runs, other btwctl commands talk to the dongle through it.
+[Unit]
+Description=Creative BT-W dongle event monitor
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+# Through sh so it also finds a pipx install in ~/.local/bin ($$ = literal $ for systemd)
+ExecStart=/bin/sh -c 'PATH="$$HOME/.local/bin:$$PATH" exec btwctl monitor --notify'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

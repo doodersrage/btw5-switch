@@ -107,9 +107,9 @@ class NotFound(BTW5Error):
             msg += "\n\nFound other Creative devices:\n" + "\n".join(
                 f"  041e:{pid:04x}  {name}" for pid, name in others)
             msg += ("\nIf one of them is a BT-W series Bluetooth dongle, it may speak the same protocol."
-                    "\nTry it with:   btw5-switch --device 041e:XXXX status"
-                    "\nand please open an issue with the output of:   btw5-switch --device 041e:XXXX dump"
-                    "\nhttps://github.com/doodersrage/btw5-switch/issues")
+                    "\nTry it with:   btwctl --device 041e:XXXX status"
+                    "\nand please open an issue with the output of:   btwctl --device 041e:XXXX dump"
+                    "\nhttps://github.com/doodersrage/btwctl/issues")
         super().__init__(msg)
 
 
@@ -122,7 +122,7 @@ class PermissionDenied(BTW5Error):
 class Busy(BTW5Error):
     def __init__(self):
         super().__init__("The dongle is in use by another program "
-                         "(is 'btw5-switch monitor' running?).")
+                         "(is 'btwctl monitor' running?).")
 
 
 class Gone(BTW5Error):
@@ -197,7 +197,7 @@ class UsbTransport:
                         raise usb_error(e) from None
                     if time.monotonic() >= deadline:
                         raise Busy() from None
-                    time.sleep(0.2)  # another short-lived btw5-switch (tray, status bar) has it
+                    time.sleep(0.2)  # another short-lived btwctl (tray, status bar) has it
         except BaseException:
             self.close()  # don't leave the interface detached from its driver
             raise

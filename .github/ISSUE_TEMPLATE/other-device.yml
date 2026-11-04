@@ -23,11 +23,11 @@ body:
   - type: textarea
     id: dump
     attributes:
-      label: Output of `btw5-switch --device 041e:XXXX -v dump`
+      label: Output of `btwctl --device 041e:XXXX -v dump`
       description: Read-only; it only asks the dongle for its settings.
       render: text
   - type: textarea
     id: notes
     attributes:
       label: What worked?
-      description: Optionally try `btw5-switch --device 041e:XXXX status`, `ll` and `hq` with a headset connected and tell us what happened.
+      description: Optionally try `btwctl --device 041e:XXXX status`, `ll` and `hq` with a headset connected and tell us what happened.

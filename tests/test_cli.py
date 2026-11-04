@@ -2,15 +2,15 @@ import json
 
 import pytest
 
-from btw5 import cli, device
-from btw5 import protocol as P
+from btwctl import cli, device
+from btwctl import protocol as P
 from tests.fakes import FakeDongle
 
 
 @pytest.fixture
 def dongle(monkeypatch):
     fake = FakeDongle()
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     return fake
 
 
@@ -37,7 +37,7 @@ def test_toggle(dongle, capsys):
 
 def test_toggle_without_aptx_headset(capsys, monkeypatch):
     fake = FakeDongle(connected=False)
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     with pytest.raises(SystemExit, match="Can't read the current aptX mode"):
         cli.main(["toggle"])
 
@@ -51,7 +51,7 @@ def test_paired(dongle, capsys):
 
 def test_pair_by_partial_name(capsys, monkeypatch):
     fake = FakeDongle(connected=False)
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     out = run(capsys, "pair", "momentum")
     assert "Connected to MOMENTUM 4" in out
     assert (P.CMD_BT, bytes([P.BT_SCAN, P.SCAN_CONNECT]) + bytes.fromhex("ba52e90980c3")) in fake.sent
@@ -64,7 +64,7 @@ def test_pair_unknown_name(dongle):
 
 def test_pair_rejected(capsys, monkeypatch):
     fake = FakeDongle(connected=False, connect_status=0x80)
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     with pytest.raises(SystemExit, match="refused to connect"):
         cli.main(["pair", "ba:52:e9:09:80:c3"])
 
@@ -76,7 +76,7 @@ def test_info_json(dongle, capsys):
 
 
 def test_info_marks_untested_models(dongle, capsys, monkeypatch):
-    monkeypatch.setattr("btw5.device.dongle_info",
+    monkeypatch.setattr("btwctl.device.dongle_info",
                         lambda: {"model": "Creative BT-W6", "usb_id": "041e:3132", "tested": False})
     out = run(capsys, "info")
     assert "Model    : Creative BT-W6 (041e:3132)  (reported to work by users" in out
@@ -99,7 +99,7 @@ def test_waybar_absent(capsys, monkeypatch):
     class Missing(FakeDongle):
         def open(self):
             raise device.NotFound()
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: Missing())
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: Missing())
     assert json.loads(run(capsys, "waybar"))["class"] == "absent"
 
 
@@ -107,7 +107,7 @@ def test_errors_become_messages(monkeypatch):
     class Busy(FakeDongle):
         def open(self):
             raise device.Busy()
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: Busy())
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: Busy())
     with pytest.raises(SystemExit, match="in use by another program"):
         cli.main(["status"])
 
@@ -118,7 +118,7 @@ X3 = bytes.fromhex("68001abc5ceb")
 def test_scan_lists_headsets(capsys, monkeypatch):
     from tests.fakes import scan_frame
     fake = FakeDongle(scan_frames=[scan_frame(X3, b"X3", -43), scan_frame(X3, b"X3", -40)])
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     out = run(capsys, "scan", "0.3")
     assert "68:00:1a:bc:5c:eb   -43 dBm  X3" in out and "pair <address>" in out
     res = json.loads(run(capsys, "scan", "0.3", "--json"))
@@ -131,7 +131,7 @@ def test_scan_reports_auto_connect(capsys, monkeypatch):
     from tests.fakes import conn_frame
     fake = FakeDongle(scan_frames=[conn_frame(P.CONN_CONNECTING, X3, b"X3"),
                                    conn_frame(P.CONN_CONNECTED, X3, b"X3")])
-    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
     out = run(capsys, "scan", "5")
     assert "connected to X3 (68:00:1a:bc:5c:eb) by itself" in out
     assert "No devices found" not in out

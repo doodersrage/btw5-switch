@@ -11,10 +11,10 @@ try:
 except ImportError:
     pytest.importorskip("PySide6.QtWidgets")
 
-from btw5 import protocol as P  # noqa: E402
-from btw5 import device  # noqa: E402
-from btw5.qt import QtWidgets  # noqa: E402
-from btw5.window import Window  # noqa: E402
+from btwctl import protocol as P  # noqa: E402
+from btwctl import device  # noqa: E402
+from btwctl.qt import QtWidgets  # noqa: E402
+from btwctl.window import Window  # noqa: E402
 from tests.fakes import FakeDongle, conn_frame, scan_frame  # noqa: E402
 
 X3 = bytes.fromhex("68001abc5ceb")
@@ -30,8 +30,8 @@ def app():
 def isolated(tmp_path, monkeypatch):
     """Never touch the real config or systemd from tests."""
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "config"))
-    monkeypatch.setattr("btw5.service.is_active", lambda: False)
-    monkeypatch.setattr("btw5.service.enable", lambda: (True, "Background service started."))
+    monkeypatch.setattr("btwctl.service.is_active", lambda: False)
+    monkeypatch.setattr("btwctl.service.enable", lambda: (True, "Background service started."))
 
 
 @pytest.fixture
@@ -41,7 +41,7 @@ def make(app, monkeypatch):
     monkeypatch.setattr(QtWidgets.QMessageBox, "question", lambda *a, **k: YES)
 
     def make(fake):
-        monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+        monkeypatch.setattr("btwctl.broker.default_transport", lambda *a, **k: fake)
         w = Window()
         w.show()
         windows.append(w)
@@ -159,7 +159,7 @@ def test_message_banner_dismiss(app, make):
 
 
 def test_remember_settings_for_headset(app, make):
-    from btw5.config import Config
+    from btwctl.config import Config
     fake = FakeDongle()
     w = make(fake)
     assert "MOMENTUM 4" in w.remember.text() and not w.remember.isChecked()
@@ -174,7 +174,7 @@ def test_remember_settings_for_headset(app, make):
 
 
 def test_game_mode_controls(app, make):
-    from btw5.config import Config
+    from btwctl.config import Config
     w = make(FakeDongle())
     assert not w.game_mode.isChecked() and "SteamLaunch" in w.game_apps.text()
     w.game_mode.click()
@@ -187,7 +187,7 @@ def test_game_mode_controls(app, make):
 def test_service_button(app, make, monkeypatch):
     w = make(FakeDongle())
     assert not w.service_btn.isHidden() and "isn't running" in w.service_label.text()
-    monkeypatch.setattr("btw5.service.is_active", lambda: True)
+    monkeypatch.setattr("btwctl.service.is_active", lambda: True)
     w.service_btn.click()
     wait(app, lambda: "service started" in w.message())
     wait(app, lambda: w.service_btn.isHidden() and "running" in w.service_label.text())
