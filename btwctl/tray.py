@@ -8,6 +8,7 @@ import sys
 
 from . import protocol as P
 from .device import BTW5Error, NotFound
+from .i18n import tr
 from .qt import QtCore, QtGui, QtWidgets, Worker, run_app, snapshot, theme_icon
 
 QAction, QActionGroup = QtGui.QAction, QtGui.QActionGroup
@@ -23,7 +24,7 @@ class Tray:
         self.window = None
 
         self.icon = QSystemTrayIcon(theme_icon())
-        self.icon.setToolTip("BT-W Control")
+        self.icon.setToolTip(tr("BT-W Control"))
         self.menu = QMenu()
         self.icon.setContextMenu(self.menu)
         self.icon.activated.connect(self.on_activated)
@@ -43,10 +44,10 @@ class Tray:
     def act(self, what, fn, refresh_after_ms=500):
         def done(r):
             if isinstance(r, Exception):
-                self.icon.showMessage("BT-W Control", f"{what} failed: {r}",
+                self.icon.showMessage(tr("BT-W Control"), tr("{action} failed: {error}").format(action=what, error=r),
                                       QSystemTrayIcon.MessageIcon.Warning, 5000)
             elif isinstance(r, int) and r not in (P.STATUS_OK,):
-                self.icon.showMessage("BT-W Control", f"The dongle rejected: {what} (status 0x{r:02x})",
+                self.icon.showMessage(tr("BT-W Control"), tr("The dongle rejected: {action} (status 0x{status:02x})").format(action=what, status=r),
                                       QSystemTrayIcon.MessageIcon.Warning, 5000)
             QTimer.singleShot(refresh_after_ms, self.refresh)
         self.worker.with_device(fn, done)
@@ -66,8 +67,8 @@ class Tray:
         cfg.save()
         from . import service
         if on and service.is_active() is False:
-            self.icon.showMessage("BT-W Control", "Game mode needs the background service. Turn it on in the "
-                                  "BT-W Control window.", QSystemTrayIcon.MessageIcon.Information, 8000)
+            self.icon.showMessage(tr("BT-W Control"), tr("Game mode needs the background service. Turn it on in the "
+                                  "BT-W Control window."), QSystemTrayIcon.MessageIcon.Information, 8000)
 
     def open_window(self):
         from .window import Window
@@ -84,7 +85,7 @@ class Tray:
             self.set_aptx("hq" if self.state["aptx_mode"] == "LL" else "ll")
 
     def set_aptx(self, mode):
-        self.act(f"aptX {mode.upper()}", lambda d: d.set(P.SET_APTX, P.APTX[mode]))
+        self.act(tr("aptX Low Latency") if mode == "ll" else tr("aptX High Quality"), lambda d: d.set(P.SET_APTX, P.APTX[mode]))
 
     def on_state(self, r):
         if isinstance(r, Exception):
@@ -100,22 +101,23 @@ class Tray:
         if prev is not None:
             ph = prev["headset"]
             if h and (not ph or ph["address"] != h["address"]):
-                self.icon.showMessage("BT-W Control", f"Connected: {h['name'] or h['address']}",
+                self.icon.showMessage(tr("BT-W Control"), tr("Connected: {headset}").format(headset=h["name"] or h["address"]),
                                       theme_icon(), 4000)
             elif ph and not h:
-                self.icon.showMessage("BT-W Control", f"Disconnected: {ph['name'] or ph['address']}",
+                self.icon.showMessage(tr("BT-W Control"), tr("Disconnected: {headset}").format(headset=ph["name"] or ph["address"]),
                                       theme_icon(), 4000)
-        tip = [f"{h['name'] or h['address']}" if h else "No headset connected"]
+        tip = [h["name"] or h["address"] if h else tr("No headset connected")]
         if r["aptx_mode"]:
-            tip.append(f"aptX Adaptive {r['aptx_mode']}")
-        tip.append(f"HFP {'on' if r['hfp'] else 'off'}, auto HFP {'on' if r['auto_hfp'] else 'off'}")
+            tip.append(tr("aptX Adaptive Low Latency") if r["aptx_mode"] == "LL" else tr("aptX Adaptive High Quality"))
+        tip.append(tr("Microphone (HFP): {hfp}, automatic switching: {auto}").format(
+            hfp=tr("on") if r["hfp"] else tr("off"), auto=tr("on") if r["auto_hfp"] else tr("off")))
         self.icon.setToolTip("BT-W Control\n" + "\n".join(tip))
         self.build_menu()
 
     def build_menu(self):
         m = self.menu
         m.clear()
-        m.addAction(theme_icon("configure", "preferences-system"), "Open BT-W Control…").triggered.connect(
+        m.addAction(theme_icon("configure", "preferences-system"), tr("Open BT-W Control…")).triggered.connect(
             self.open_window)
         m.addSeparator()
         st = self.state
@@ -123,7 +125,7 @@ class Tray:
             m.addAction(self.icon.toolTip()).setEnabled(False)
         else:
             h = st["headset"]
-            m.addAction(f"🎧 {h['name'] or h['address']}" if h else "No headset connected").setEnabled(False)
+            m.addAction(f"🎧 {h['name'] or h['address']}" if h else tr("No headset connected")).setEnabled(False)
             m.addSeparator()
 
             group = QActionGroup(m)
@@ -136,46 +138,47 @@ class Tray:
                 m.addAction(a)
             m.addSeparator()
 
-            a = QAction("Headset microphone (HFP)", m, checkable=True)
+            a = QAction(tr("Headset microphone (HFP)"), m, checkable=True)
             a.setChecked(bool(st["hfp"]))
             a.setEnabled(st["hfp"] is not None)
             a.triggered.connect(lambda on: self.act(
-                "HFP", lambda d: d.set(P.SET_HFP, P.HFP_VALUES["on" if on else "off"]), 4000))
+                tr("HFP"), lambda d: d.set(P.SET_HFP, P.HFP_VALUES["on" if on else "off"]), 4000))
             m.addAction(a)
-            a = QAction("Switch to HFP automatically", m, checkable=True)
+            a = QAction(tr("Switch to HFP automatically"), m, checkable=True)
             a.setChecked(bool(st["auto_hfp"]))
             a.setEnabled(st["auto_hfp"] is not None)
             a.triggered.connect(lambda on: self.act(
-                "auto HFP", lambda d: d.set(P.SET_AUTO_HFP, P.AUTO_HFP_VALUES["on" if on else "off"])))
+                tr("auto HFP"), lambda d: d.set(P.SET_AUTO_HFP, P.AUTO_HFP_VALUES["on" if on else "off"])))
             m.addAction(a)
             m.addSeparator()
 
-            a = QAction("Sound follows the headset", m, checkable=True)
+            a = QAction(tr("Sound follows the headset"), m, checkable=True)
             a.setChecked(self.config().audio_follow)
             a.triggered.connect(self.set_audio_follow)
             m.addAction(a)
-            a = QAction("Low Latency while gaming", m, checkable=True)
+            a = QAction(tr("Low Latency while gaming"), m, checkable=True)
             a.setChecked(self.config().game_mode)
-            a.setToolTip("Applied by the background service")
+            a.setToolTip(tr("Applied by the background service"))
             a.triggered.connect(self.set_game_mode)
             m.addAction(a)
             m.addSeparator()
 
-            sub = m.addMenu("Connect to")
+            sub = m.addMenu(tr("Connect to"))
             for dev in st["paired"]:
                 label = dev["name"] or P.fmt_addr(dev["address"])
                 a = sub.addAction(label)
                 current = h is not None and h["address"] == P.fmt_addr(dev["address"])
                 a.setEnabled(not current)
                 a.triggered.connect(lambda _=False, addr=dev["address"], label=label:
-                                    self.act(f"connect to {label}", lambda d: d.connect(addr), 5000))
+                                    self.act(tr("Connect to {headset}").format(headset=label),
+                                             lambda d: d.connect(addr), 5000))
             sub.setEnabled(bool(st["paired"]))
-            a = m.addAction("Disconnect")
+            a = m.addAction(tr("Disconnect"))
             a.setEnabled(h is not None)
-            a.triggered.connect(lambda: self.act("disconnect", lambda d: d.start_scan(), 2000))
+            a.triggered.connect(lambda: self.act(tr("disconnect"), lambda d: d.start_scan(), 2000))
         m.addSeparator()
-        m.addAction("Refresh").triggered.connect(self.refresh)
-        m.addAction("Quit").triggered.connect(self.quit)
+        m.addAction(tr("Refresh")).triggered.connect(self.refresh)
+        m.addAction(tr("Quit")).triggered.connect(self.quit)
 
     def quit(self):
         if self.quitting:

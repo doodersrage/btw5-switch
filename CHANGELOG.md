@@ -3,6 +3,7 @@
 ## 0.8 (not released yet)
 
 - **Sound follows the headset**: the dongle becomes the default audio output (and, with the headset microphone on, the default microphone) while a headset is connected, and the previous device comes back when it disconnects. Turn it on in the window, the tray menu or with `btwctl audio-follow on`. Uses PipeWire.
+- The window and tray can be translated (gettext `.po` files); see `CONTRIBUTING-translations.md`.
 - Packaging for Ubuntu PPAs (`debian/`) and Fedora COPR (`.copr/Makefile`), checked in CI; see `packaging/PUBLISHING.md`. The release `.deb` is now built with the standard Debian tools.
 
 ## 0.7 (not released yet)

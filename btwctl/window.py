@@ -12,6 +12,7 @@ from . import protocol as P
 from . import service
 from .config import Config
 from .device import Busy, NotFound, read_dump
+from .i18n import tr
 from .qt import QtCore, QtGui, QtWidgets, Signal, Worker, run_app, snapshot, theme_icon
 
 Qt = QtCore.Qt
@@ -50,7 +51,7 @@ class Window(W.QMainWindow):
         self.stop_scan = threading.Event()
         self.scan_rows = {}   # address bytes -> table row
 
-        self.setWindowTitle("BT-W Control")
+        self.setWindowTitle(tr("BT-W Control"))
         self.setWindowIcon(theme_icon())
         self.build()
         self.worker.busy_changed.connect(lambda _busy: self.update_enabled())
@@ -75,18 +76,18 @@ class Window(W.QMainWindow):
         icon.setPixmap(theme_icon().pixmap(48, 48))
         head.addWidget(icon)
         titles = W.QVBoxLayout()
-        self.title = W.QLabel("BT-W Control")
+        self.title = W.QLabel(tr("BT-W Control"))
         font = self.title.font()
         font.setPointSizeF(font.pointSizeF() * 1.4)
         font.setBold(True)
         self.title.setFont(font)
-        self.subtitle = W.QLabel("Reading the dongle…")
+        self.subtitle = W.QLabel(tr("Reading the dongle…"))
         titles.addWidget(self.title)
         titles.addWidget(self.subtitle)
         head.addLayout(titles, 1)
         self.refresh_btn = W.QToolButton()
         self.refresh_btn.setIcon(theme_icon("view-refresh"))
-        self.refresh_btn.setToolTip("Refresh")
+        self.refresh_btn.setToolTip(tr("Refresh"))
         self.refresh_btn.clicked.connect(lambda: self.refresh())
         head.addWidget(self.refresh_btn, 0, Qt.AlignmentFlag.AlignTop)
         root.addLayout(head)
@@ -103,7 +104,7 @@ class Window(W.QMainWindow):
         close = W.QToolButton()
         close.setIcon(theme_icon("window-close", "dialog-close"))
         close.setAutoRaise(True)
-        close.setToolTip("Dismiss")
+        close.setToolTip(tr("Dismiss"))
         close.clicked.connect(self.banner.hide)
         row.addWidget(close, 0, Qt.AlignmentFlag.AlignTop)
         self.banner.hide()
@@ -125,54 +126,54 @@ class Window(W.QMainWindow):
         self.banner_timer.timeout.connect(self.banner.hide)
 
         # audio settings
-        self.audio = W.QGroupBox("Audio")
+        self.audio = W.QGroupBox(tr("Audio"))
         form = W.QFormLayout(self.audio)
         modes = W.QHBoxLayout()
-        self.hq = W.QRadioButton("High Quality")
-        self.ll = W.QRadioButton("Low Latency")
-        self.hq.setToolTip("Best sound; more delay")
-        self.ll.setToolTip("Less delay for games and video; slightly lower quality")
+        self.hq = W.QRadioButton(tr("High Quality"))
+        self.ll = W.QRadioButton(tr("Low Latency"))
+        self.hq.setToolTip(tr("Best sound; more delay"))
+        self.ll.setToolTip(tr("Less delay for games and video; slightly lower quality"))
         self.hq.clicked.connect(lambda: self.set_aptx("hq"))
         self.ll.clicked.connect(lambda: self.set_aptx("ll"))
         modes.addWidget(self.hq)
         modes.addWidget(self.ll)
         modes.addStretch()
-        form.addRow("aptX Adaptive:", modes)
-        self.aptx_hint = hint("Needs a connected headset that supports aptX Adaptive.")
+        form.addRow(tr("aptX Adaptive:"), modes)
+        self.aptx_hint = hint(tr("Needs a connected headset that supports aptX Adaptive."))
         form.addRow("", self.aptx_hint)
-        self.hfp = W.QCheckBox("Headset microphone (HFP)")
+        self.hfp = W.QCheckBox(tr("Headset microphone (HFP)"))
         self.hfp.clicked.connect(self.set_hfp)
         form.addRow(self.hfp)
-        form.addRow(hint("Changing this makes the dongle reconnect, so audio drops for a few seconds."))
-        self.auto_hfp = W.QCheckBox("Switch to the microphone automatically when an app uses it")
+        form.addRow(hint(tr("Changing this makes the dongle reconnect, so audio drops for a few seconds.")))
+        self.auto_hfp = W.QCheckBox(tr("Switch to the microphone automatically when an app uses it"))
         self.auto_hfp.clicked.connect(self.set_auto_hfp)
         form.addRow(self.auto_hfp)
-        self.remember = W.QCheckBox("Use these settings whenever this headset connects")
-        self.remember.setToolTip("Saved per headset and applied by the background service")
+        self.remember = W.QCheckBox(tr("Use these settings whenever this headset connects"))
+        self.remember.setToolTip(tr("Saved per headset and applied by the background service"))
         self.remember.clicked.connect(self.set_remember)
         form.addRow(self.remember)
         sections.addWidget(self.audio)
 
         # automation
-        self.automation = W.QGroupBox("Automation")
+        self.automation = W.QGroupBox(tr("Automation"))
         form = W.QFormLayout(self.automation)
-        self.game_mode = W.QCheckBox("Use Low Latency while a game is running, then switch back")
+        self.game_mode = W.QCheckBox(tr("Use Low Latency while a game is running, then switch back"))
         self.game_mode.clicked.connect(self.set_game_mode)
         form.addRow(self.game_mode)
         self.game_apps = W.QLineEdit()
-        self.game_apps.setToolTip("A process counts as a game if its command line contains one of these "
-                                  "(comma-separated, case doesn't matter)")
+        self.game_apps.setToolTip(tr("A process counts as a game if its command line contains one of these "
+                                  "(comma-separated, case doesn't matter)"))
         self.game_apps.editingFinished.connect(self.set_game_apps)
-        form.addRow("Games:", self.game_apps)
-        self.audio_follow = W.QCheckBox("Switch sound to the dongle while a headset is connected, and back after")
-        self.audio_follow.setToolTip("Sets the default output (and, with the headset microphone on, the default "
-                                     "microphone) through PipeWire")
+        form.addRow(tr("Games:"), self.game_apps)
+        self.audio_follow = W.QCheckBox(tr("Switch sound to the dongle while a headset is connected, and back after"))
+        self.audio_follow.setToolTip(tr("Sets the default output (and, with the headset microphone on, the default "
+                                     "microphone) through PipeWire"))
         self.audio_follow.clicked.connect(self.set_audio_follow)
         form.addRow(self.audio_follow)
         row = W.QHBoxLayout()
         self.service_label = W.QLabel()
         self.service_label.setWordWrap(True)
-        self.service_btn = W.QPushButton("Start background service")
+        self.service_btn = W.QPushButton(tr("Start background service"))
         self.service_btn.setToolTip(f"Runs: {service.ENABLE_CMD}")
         self.service_btn.clicked.connect(self.start_service)
         row.addWidget(self.service_label, 1)
@@ -181,15 +182,15 @@ class Window(W.QMainWindow):
         sections.addWidget(self.automation)
 
         # paired headsets
-        self.paired = W.QGroupBox("Paired headsets")
+        self.paired = W.QGroupBox(tr("Paired headsets"))
         box = W.QVBoxLayout(self.paired)
-        self.slots = self.make_table(["Headset", "Address", ""], P.PAIR_SLOTS)
+        self.slots = self.make_table([tr("Headset"), tr("Address"), ""], P.PAIR_SLOTS)
         self.fit_rows(self.slots, P.PAIR_SLOTS)
         box.addWidget(self.slots)
         row = W.QHBoxLayout()
-        self.disconnect_btn = W.QPushButton("Disconnect")
+        self.disconnect_btn = W.QPushButton(tr("Disconnect"))
         self.disconnect_btn.clicked.connect(self.disconnect)
-        self.forget_btn = W.QPushButton(theme_icon("edit-delete"), "Forget all…")
+        self.forget_btn = W.QPushButton(theme_icon("edit-delete"), tr("Forget all…"))
         self.forget_btn.clicked.connect(self.forget_all)
         row.addWidget(self.disconnect_btn)
         row.addStretch()
@@ -198,13 +199,13 @@ class Window(W.QMainWindow):
         sections.addWidget(self.paired)
 
         # pairing a new headset
-        self.pairing = W.QGroupBox("Pair a new headset")
+        self.pairing = W.QGroupBox(tr("Pair a new headset"))
         box = W.QVBoxLayout(self.pairing)
-        box.addWidget(hint("Put the headset in pairing mode, then scan. Scanning disconnects the "
+        box.addWidget(hint(tr("Put the headset in pairing mode, then scan. Scanning disconnects the "
                            "current headset. If the dongle finds a headset in pairing mode it "
-                           "often connects to it right away."))
+                           "often connects to it right away.")))
         row = W.QHBoxLayout()
-        self.scan_btn = W.QPushButton(theme_icon("edit-find", "system-search"), "Scan")
+        self.scan_btn = W.QPushButton(theme_icon("edit-find", "system-search"), tr("Scan"))
         self.scan_btn.clicked.connect(self.toggle_scan)
         self.scan_secs = W.QSpinBox()
         self.scan_secs.setRange(5, 60)
@@ -217,20 +218,20 @@ class Window(W.QMainWindow):
         row.addWidget(self.scan_secs)
         row.addWidget(self.scan_progress, 1)
         box.addLayout(row)
-        self.found = self.make_table(["Headset", "Address", "Signal", ""], 0)
+        self.found = self.make_table([tr("Headset"), tr("Address"), tr("Signal"), ""], 0)
         self.fit_rows(self.found, 4)
         self.found.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         box.addWidget(self.found)
         sections.addWidget(self.pairing)
 
         # device info
-        self.device = W.QGroupBox("Dongle")
+        self.device = W.QGroupBox(tr("Dongle"))
         form = W.QFormLayout(self.device)
         form.setFieldGrowthPolicy(W.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.model = W.QLabel("–")
         self.model_note = W.QLabel(
-            "Reported to work by users but not tested here. Please "
-            "<a href='https://github.com/doodersrage/btwctl/issues/new/choose'>report</a> what works.")
+            tr("Reported to work by users but not tested here. Please "
+            "<a href='https://github.com/doodersrage/btwctl/issues/new/choose'>report</a> what works."))
         self.model_note.setWordWrap(True)
         self.model_note.setSizePolicy(W.QSizePolicy.Policy.Expanding, W.QSizePolicy.Policy.Preferred)
         self.model_note.setOpenExternalLinks(True)
@@ -239,12 +240,12 @@ class Window(W.QMainWindow):
         self.serial = W.QLabel("–")
         for label in (self.model, self.firmware, self.serial):
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        form.addRow("Model:", self.model)
+        form.addRow(tr("Model:"), self.model)
         form.addRow("", self.model_note)
-        form.addRow("Firmware:", self.firmware)
-        form.addRow("Serial number:", self.serial)
-        self.diag_btn = W.QPushButton(theme_icon("edit-copy"), "Copy diagnostics")
-        self.diag_btn.setToolTip("Copy every readable register as JSON, for bug reports")
+        form.addRow(tr("Firmware:"), self.firmware)
+        form.addRow(tr("Serial number:"), self.serial)
+        self.diag_btn = W.QPushButton(theme_icon("edit-copy"), tr("Copy diagnostics"))
+        self.diag_btn.setToolTip(tr("Copy every readable register as JSON, for bug reports"))
         self.diag_btn.clicked.connect(self.copy_diagnostics)
         row = W.QHBoxLayout()
         row.addWidget(self.diag_btn)
@@ -313,15 +314,15 @@ class Window(W.QMainWindow):
         if self.closed:
             return
         if isinstance(r, Busy):
-            self.say("The dongle is busy in another program; retrying…")
+            self.say(tr("The dongle is busy in another program; retrying…"))
             return
         if isinstance(r, Exception):
             self.state = None
             if isinstance(r, NotFound):
-                self.title.setText("No dongle found")
-                self.subtitle.setText("Plug in the dongle (it also disappears briefly after HFP changes).")
+                self.title.setText(tr("No dongle found"))
+                self.subtitle.setText(tr("Plug in the dongle (it also disappears briefly after HFP changes)."))
             else:
-                self.title.setText("BT-W Control")
+                self.title.setText(tr("BT-W Control"))
                 self.subtitle.setText(str(r))
             self.update_enabled()
             return
@@ -339,14 +340,15 @@ class Window(W.QMainWindow):
         h = r["headset"]
         if h:
             self.title.setText(h["name"] or h["address"])
-            mode = {"LL": "aptX Adaptive Low Latency", "HQ": "aptX Adaptive High Quality"}.get(
-                r["aptx_mode"], "no aptX Adaptive")
-            self.subtitle.setText(f"Connected · {mode} · {h['address']}")
+            mode = {"LL": tr("aptX Adaptive Low Latency"), "HQ": tr("aptX Adaptive High Quality")}.get(
+                r["aptx_mode"], tr("no aptX Adaptive"))
+            self.subtitle.setText(tr("Connected · {mode} · {address}").format(mode=mode, address=h["address"]))
         else:
-            self.title.setText("No headset connected")
+            self.title.setText(tr("No headset connected"))
             last = r["last_headset"]
-            self.subtitle.setText(f"Last: {last['name'] or last['address']} ({r['connection']})"
-                                  if last else "Connect a paired headset or pair a new one below.")
+            self.subtitle.setText(tr("Last: {headset} ({state})").format(
+                headset=last["name"] or last["address"], state=r["connection"])
+                                  if last else tr("Connect a paired headset or pair a new one below."))
 
         self.hq.setChecked(r["aptx_mode"] == "HQ")
         self.ll.setChecked(r["aptx_mode"] == "LL")
@@ -364,7 +366,7 @@ class Window(W.QMainWindow):
         for row, s in enumerate(r["slots"]):
             empty = s["address"] == P.ZERO_ADDR
             addr = P.fmt_addr(s["address"])
-            name = W.QTableWidgetItem("(empty)" if empty else (s["name"] or addr))
+            name = W.QTableWidgetItem(tr("(empty)") if empty else (s["name"] or addr))
             if empty:
                 name.setForeground(self.palette().color(QtGui.QPalette.ColorRole.PlaceholderText))
             self.slots.setItem(row, 0, name)
@@ -374,10 +376,10 @@ class Window(W.QMainWindow):
                 self.slots.setItem(row, 2, W.QTableWidgetItem(""))
             elif addr == current:
                 self.slots.removeCellWidget(row, 2)
-                self.slots.setItem(row, 2, W.QTableWidgetItem("✓ Connected"))
+                self.slots.setItem(row, 2, W.QTableWidgetItem(tr("✓ Connected")))
             else:
                 self.slots.setItem(row, 2, W.QTableWidgetItem(""))
-                btn = W.QPushButton("Connect")
+                btn = W.QPushButton(tr("Connect"))
                 btn.clicked.connect(lambda _=False, a=s["address"], n=s["name"] or addr: self.connect_to(a, n))
                 self.slots.setCellWidget(row, 2, btn)
 
@@ -385,10 +387,11 @@ class Window(W.QMainWindow):
         self.config.reload_if_changed()
         h = r["headset"]
         if h:
-            self.remember.setText(f"Use these settings whenever {h['name'] or h['address']} connects")
+            self.remember.setText(tr("Use these settings whenever {headset} connects").format(
+                headset=h["name"] or h["address"]))
             self.remember.setChecked(bool(self.config.preferences(h["address"])))
         else:
-            self.remember.setText("Use these settings whenever this headset connects")
+            self.remember.setText(tr("Use these settings whenever this headset connects"))
             self.remember.setChecked(False)
         self.game_mode.setChecked(self.config.game_mode)
         self.audio_follow.setChecked(self.config.audio_follow)
@@ -397,13 +400,13 @@ class Window(W.QMainWindow):
         running = r.get("service")
         self.service_btn.setVisible(running is False)
         if running:
-            self.service_label.setText("✓ Background service running: it applies these automatically.")
+            self.service_label.setText(tr("✓ Background service running: it applies these automatically."))
         elif running is False:
-            self.service_label.setText("The background service isn't running. Headset settings and "
-                                       "game mode only work while it runs.")
+            self.service_label.setText(tr("The background service isn't running. Headset settings and "
+                                       "game mode only work while it runs."))
         else:
-            self.service_label.setText("Headset settings and game mode are applied by "
-                                       "'btwctl monitor'; keep it running.")
+            self.service_label.setText(tr("Headset settings and game mode are applied by "
+                                       "'btwctl monitor'; keep it running."))
 
     def update_enabled(self):
         ok = self.state is not None
@@ -463,11 +466,12 @@ class Window(W.QMainWindow):
             if self.closed:
                 return
             if isinstance(r, Exception):
-                self.say(f"{doing} failed: {r}", 12000, "error")
+                self.say(tr("{action} failed: {error}").format(action=doing, error=r), 12000, "error")
             elif done:
                 done(r)
             elif isinstance(r, int) and r != P.STATUS_OK:
-                self.say(f"The dongle refused (status 0x{r:02x}). Is a compatible headset connected?",
+                self.say(tr("The dongle refused (status 0x{status:02x}). Is a compatible headset connected?")
+                         .format(status=r),
                          12000, "warn")
             else:
                 self.clear_message()
@@ -499,17 +503,18 @@ class Window(W.QMainWindow):
                 aptx=(st["aptx_mode"] or "").lower() or None,
                 hfp=None if st["hfp"] is None else ("on" if st["hfp"] else "off"),
                 auto_hfp=None if st["auto_hfp"] is None else ("on" if st["auto_hfp"] else "off"))
-            self.say(f"These settings will be applied whenever {label} connects.", kind="ok")
+            self.say(tr("These settings will be applied whenever {headset} connects.").format(headset=label),
+                     kind="ok")
         else:
             self.config.clear_preferences(h["address"])
-            self.say(f"Settings for {label} forgotten.")
+            self.say(tr("Settings for {headset} forgotten.").format(headset=label))
         self.config.save()
 
     def set_game_mode(self, on):
         self.config.reload_if_changed()
         self.config.game_mode = on
         self.config.save()
-        self.say("Game mode on: Low Latency while a game runs." if on else "Game mode off.",
+        self.say(tr("Game mode on: Low Latency while a game runs.") if on else tr("Game mode off."),
                  kind="ok" if on else "info")
 
     def set_audio_follow(self, on):
@@ -518,9 +523,9 @@ class Window(W.QMainWindow):
         self.config.audio_follow = on
         self.config.save()
         if on and not audio.available():
-            self.say("This needs PipeWire (pw-dump and wpctl aren't installed).", 15000, "warn")
+            self.say(tr("This needs PipeWire (pw-dump and wpctl aren't installed)."), 15000, "warn")
         else:
-            self.say("Sound will follow the headset." if on else "Sound won't switch automatically.",
+            self.say(tr("Sound will follow the headset.") if on else tr("Sound won't switch automatically."),
                      kind="ok" if on else "info")
 
     def set_game_apps(self):
@@ -529,7 +534,7 @@ class Window(W.QMainWindow):
         if apps != self.config.game_apps:
             self.config.game_apps = apps
             self.config.save()
-            self.say("Game list saved.", kind="ok")
+            self.say(tr("Game list saved."), kind="ok")
 
     def start_service(self):
         def done(r):
@@ -540,19 +545,20 @@ class Window(W.QMainWindow):
 
     def set_aptx(self, mode):
         self.save_preference(aptx=mode)
-        self.act(f"Switching to aptX {P.APTX_NAMES[P.APTX[mode]]}",
+        self.act(tr("Switching to aptX Low Latency") if mode == "ll" else tr("Switching to aptX High Quality"),
                  lambda d: d.set(P.SET_APTX, P.APTX[mode]))
 
     def set_hfp(self, on):
         self.save_preference(hfp="on" if on else "off")
         # the dongle re-enumerates: refresh once it's back
-        self.act(f"Turning the headset microphone {'on' if on else 'off'}",
+        self.act(tr("Turning the headset microphone on") if on else tr("Turning the headset microphone off"),
                  lambda d: d.set(P.SET_HFP, P.HFP_VALUES["on" if on else "off"]),
                  refresh_after=(4000, 8000, 12000))
 
     def set_auto_hfp(self, on):
         self.save_preference(auto_hfp="on" if on else "off")
-        self.act(f"Turning automatic microphone switching {'on' if on else 'off'}",
+        self.act(tr("Turning automatic microphone switching on") if on
+                 else tr("Turning automatic microphone switching off"),
                  lambda d: d.set(P.SET_AUTO_HFP, P.AUTO_HFP_VALUES["on" if on else "off"]))
 
     def connect_to(self, addr, label):
@@ -561,39 +567,39 @@ class Window(W.QMainWindow):
         def done(r):
             result, name = r
             text = {
-                "connected": f"Connected to {name or label}.",
-                "rejected": f"The dongle can't reach {label}. Make sure it's on and not connected "
-                            "to another device, or put it in pairing mode and scan.",
-                "disconnected": f"{label} disconnected again.",
-                "timeout": f"No connection confirmed for {label} yet.",
-            }[result]
+                "connected": tr("Connected to {headset}."),
+                "rejected": tr("The dongle can't reach {headset}. Make sure it's on and not connected "
+                              "to another device, or put it in pairing mode and scan."),
+                "disconnected": tr("{headset} disconnected again."),
+                "timeout": tr("No connection confirmed for {headset} yet."),
+            }[result].format(headset=name or label if result == "connected" else label)
             if result == "connected":
                 self.say(text, 8000, "ok")
             else:
                 self.say(text, 20000, "warn")
-        self.act(f"Connecting to {label}", lambda d: d.connect_and_wait(addr, CONNECT_TIMEOUT), done)
+        self.act(tr("Connecting to {headset}").format(headset=label), lambda d: d.connect_and_wait(addr, CONNECT_TIMEOUT), done)
 
     def disconnect(self):
-        self.act("Disconnecting", lambda d: d.start_scan(),
-                 lambda r: self.say("Disconnected. (The dongle also starts looking for headsets.)"),
+        self.act(tr("Disconnecting"), lambda d: d.start_scan(),
+                 lambda r: self.say(tr("Disconnected. (The dongle also starts looking for headsets.)")),
                  refresh_after=(1500,))
 
     def forget_all(self):
         answer = W.QMessageBox.question(
-            self, "Forget all headsets?",
-            "The dongle will forget every paired headset and reconnect on USB.\n"
-            "You'll have to pair your headsets again.",
+            self, tr("Forget all headsets?"),
+            tr("The dongle will forget every paired headset and reconnect on USB.\n"
+            "You'll have to pair your headsets again."),
             W.QMessageBox.StandardButton.Yes | W.QMessageBox.StandardButton.Cancel,
             W.QMessageBox.StandardButton.Cancel)
         if answer == W.QMessageBox.StandardButton.Yes:
-            self.act("Forgetting all headsets", lambda d: d.forget_all(),
-                     lambda r: self.say("All headsets forgotten.", kind="ok"), refresh_after=(4000, 8000))
+            self.act(tr("Forgetting all headsets"), lambda d: d.forget_all(),
+                     lambda r: self.say(tr("All headsets forgotten."), kind="ok"), refresh_after=(4000, 8000))
 
     def copy_diagnostics(self):
         def done(out):
             W.QApplication.clipboard().setText(json.dumps(out, indent=2))
-            self.say("Diagnostics copied to the clipboard.", kind="ok")
-        self.act("Reading every register", read_dump, done, refresh_after=())
+            self.say(tr("Diagnostics copied to the clipboard."), kind="ok")
+        self.act(tr("Reading every register"), read_dump, done, refresh_after=())
 
     # --- scanning ----------------------------------------------------------------
 
@@ -604,8 +610,8 @@ class Window(W.QMainWindow):
         h = self.state and self.state["headset"]
         if h:
             answer = W.QMessageBox.question(
-                self, "Disconnect headset?",
-                f"Scanning disconnects {h['name'] or h['address']}. Continue?",
+                self, tr("Disconnect headset?"),
+                tr("Scanning disconnects {headset}. Continue?").format(headset=h["name"] or h["address"]),
                 W.QMessageBox.StandardButton.Yes | W.QMessageBox.StandardButton.Cancel)
             if answer != W.QMessageBox.StandardButton.Yes:
                 return
@@ -616,11 +622,11 @@ class Window(W.QMainWindow):
         self.stop_scan.clear()
         self.scan_rows.clear()
         self.found.setRowCount(0)
-        self.scan_btn.setText("Stop")
+        self.scan_btn.setText(tr("Stop"))
         self.scan_seconds = seconds
         self.scan_timer.start()
         self.scan_tick.start(100)
-        self.say("Scanning… put the headset in pairing mode.", 0)
+        self.say(tr("Scanning… put the headset in pairing mode."), 0)
         auto = {}
 
         def scan(d, report):
@@ -637,18 +643,19 @@ class Window(W.QMainWindow):
             self.scanning = False
             self.scan_tick.stop()
             self.scan_progress.setValue(0)
-            self.scan_btn.setText("Scan")
+            self.scan_btn.setText(tr("Scan"))
             if self.closed:
                 return
             if isinstance(r, Exception):
-                self.say(f"Scan failed: {r}", 12000, "error")
+                self.say(tr("Scan failed: {error}").format(error=r), 12000, "error")
             elif "conn" in auto:
                 _, addr, name = auto["conn"]
-                self.say(f"The dongle connected to {P.headset_label(addr, name)} by itself.", 12000, "ok")
+                self.say(tr("The dongle connected to {headset} by itself.").format(
+                    headset=P.headset_label(addr, name)), 12000, "ok")
             elif self.scan_rows:
-                self.say("Click Pair while the headset is still in pairing mode.", 12000)
+                self.say(tr("Click Pair while the headset is still in pairing mode."), 12000)
             else:
-                self.say("No headsets found. Is the headset in pairing mode?", 12000, "warn")
+                self.say(tr("No headsets found. Is the headset in pairing mode?"), 12000, "warn")
             self.refresh()
             self.update_enabled()
 
@@ -667,7 +674,7 @@ class Window(W.QMainWindow):
             self.found.insertRow(row)
             self.found.setItem(row, 0, W.QTableWidgetItem(label))
             self.found.setItem(row, 1, W.QTableWidgetItem(P.fmt_addr(addr)))
-            btn = W.QPushButton("Pair")
+            btn = W.QPushButton(tr("Pair"))
             btn.clicked.connect(lambda _=False, a=addr, n=label: self.connect_to(a, n))
             self.found.setCellWidget(row, 3, btn)
         sig = W.QTableWidgetItem(f"{signal_bars(rssi)}  {rssi} dBm")
@@ -705,7 +712,7 @@ class Window(W.QMainWindow):
 def main():
     app = W.QApplication(sys.argv[:1])
     app.setApplicationName("btwctl")
-    app.setApplicationDisplayName("BT-W Control")
+    app.setApplicationDisplayName(tr("BT-W Control"))
     app.setDesktopFileName("btwctl")
     w = Window()
     w.show()

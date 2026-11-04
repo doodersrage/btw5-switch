@@ -26,6 +26,9 @@ Homepage = "https://github.com/doodersrage/btwctl"
 [tool.setuptools]
 packages = ["btwctl"]
 
+[tool.setuptools.package-data]
+btwctl = ["locale/*.po", "locale/*.pot"]
+
 [tool.setuptools.dynamic]
 version = {attr = "btwctl.__version__"}
 

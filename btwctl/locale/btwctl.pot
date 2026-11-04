@@ -1,0 +1,480 @@
+# Translations of BT-W Control (btwctl). See CONTRIBUTING-translations.md.
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: btwctl/tray.py:50
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle rejected: {action} (status 0x{status:02x})"
+msgstr ""
+
+#: btwctl/tray.py:70
+msgid "Game mode needs the background service. Turn it on in the BT-W Control window."
+msgstr ""
+
+#: btwctl/tray.py:88
+msgid "aptX Low Latency"
+msgstr ""
+
+#: btwctl/tray.py:88
+msgid "aptX High Quality"
+msgstr ""
+
+#: btwctl/tray.py:104
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Connected: {headset}"
+msgstr ""
+
+#: btwctl/tray.py:107
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Disconnected: {headset}"
+msgstr ""
+
+#: btwctl/tray.py:112
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Microphone (HFP): {hfp}, automatic switching: {auto}"
+msgstr ""
+
+#: btwctl/tray.py:113 btwctl/tray.py:113
+msgid "on"
+msgstr ""
+
+#: btwctl/tray.py:113 btwctl/tray.py:113
+msgid "off"
+msgstr ""
+
+#: btwctl/tray.py:120
+msgid "Open BT-W Control…"
+msgstr ""
+
+#: btwctl/tray.py:145
+msgid "HFP"
+msgstr ""
+
+#: btwctl/tray.py:147
+msgid "Switch to HFP automatically"
+msgstr ""
+
+#: btwctl/tray.py:151
+msgid "auto HFP"
+msgstr ""
+
+#: btwctl/tray.py:155
+msgid "Sound follows the headset"
+msgstr ""
+
+#: btwctl/tray.py:159
+msgid "Low Latency while gaming"
+msgstr ""
+
+#: btwctl/tray.py:161
+msgid "Applied by the background service"
+msgstr ""
+
+#: btwctl/tray.py:166
+msgid "Connect to"
+msgstr ""
+
+#: btwctl/tray.py:173
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Connect to {headset}"
+msgstr ""
+
+#: btwctl/tray.py:178
+msgid "disconnect"
+msgstr ""
+
+#: btwctl/tray.py:181
+msgid "Quit"
+msgstr ""
+
+#: btwctl/window.py:84
+msgid "Reading the dongle…"
+msgstr ""
+
+#: btwctl/window.py:90 btwctl/tray.py:180
+msgid "Refresh"
+msgstr ""
+
+#: btwctl/window.py:107
+msgid "Dismiss"
+msgstr ""
+
+#: btwctl/window.py:129
+msgid "Audio"
+msgstr ""
+
+#: btwctl/window.py:132
+msgid "High Quality"
+msgstr ""
+
+#: btwctl/window.py:133
+msgid "Low Latency"
+msgstr ""
+
+#: btwctl/window.py:134
+msgid "Best sound; more delay"
+msgstr ""
+
+#: btwctl/window.py:135
+msgid "Less delay for games and video; slightly lower quality"
+msgstr ""
+
+#: btwctl/window.py:141
+msgid "aptX Adaptive:"
+msgstr ""
+
+#: btwctl/window.py:142
+msgid "Needs a connected headset that supports aptX Adaptive."
+msgstr ""
+
+#: btwctl/window.py:144 btwctl/tray.py:141
+msgid "Headset microphone (HFP)"
+msgstr ""
+
+#: btwctl/window.py:147
+msgid "Changing this makes the dongle reconnect, so audio drops for a few seconds."
+msgstr ""
+
+#: btwctl/window.py:148
+msgid "Switch to the microphone automatically when an app uses it"
+msgstr ""
+
+#: btwctl/window.py:151 btwctl/window.py:394
+msgid "Use these settings whenever this headset connects"
+msgstr ""
+
+#: btwctl/window.py:152
+msgid "Saved per headset and applied by the background service"
+msgstr ""
+
+#: btwctl/window.py:158
+msgid "Automation"
+msgstr ""
+
+#: btwctl/window.py:160
+msgid "Use Low Latency while a game is running, then switch back"
+msgstr ""
+
+#: btwctl/window.py:164
+msgid "A process counts as a game if its command line contains one of these (comma-separated, case doesn't matter)"
+msgstr ""
+
+#: btwctl/window.py:167
+msgid "Games:"
+msgstr ""
+
+#: btwctl/window.py:168
+msgid "Switch sound to the dongle while a headset is connected, and back after"
+msgstr ""
+
+#: btwctl/window.py:169
+msgid "Sets the default output (and, with the headset microphone on, the default microphone) through PipeWire"
+msgstr ""
+
+#: btwctl/window.py:176
+msgid "Start background service"
+msgstr ""
+
+#: btwctl/window.py:185
+msgid "Paired headsets"
+msgstr ""
+
+#: btwctl/window.py:187 btwctl/window.py:221
+msgid "Headset"
+msgstr ""
+
+#: btwctl/window.py:187 btwctl/window.py:221
+msgid "Address"
+msgstr ""
+
+#: btwctl/window.py:191 btwctl/tray.py:176
+msgid "Disconnect"
+msgstr ""
+
+#: btwctl/window.py:193
+msgid "Forget all…"
+msgstr ""
+
+#: btwctl/window.py:202
+msgid "Pair a new headset"
+msgstr ""
+
+#: btwctl/window.py:204
+msgid "Put the headset in pairing mode, then scan. Scanning disconnects the current headset. If the dongle finds a headset in pairing mode it often connects to it right away."
+msgstr ""
+
+#: btwctl/window.py:208 btwctl/window.py:646
+msgid "Scan"
+msgstr ""
+
+#: btwctl/window.py:221
+msgid "Signal"
+msgstr ""
+
+#: btwctl/window.py:228
+msgid "Dongle"
+msgstr ""
+
+#: btwctl/window.py:233
+msgid "Reported to work by users but not tested here. Please <a href='https://github.com/doodersrage/btwctl/issues/new/choose'>report</a> what works."
+msgstr ""
+
+#: btwctl/window.py:243
+msgid "Model:"
+msgstr ""
+
+#: btwctl/window.py:245
+msgid "Firmware:"
+msgstr ""
+
+#: btwctl/window.py:246
+msgid "Serial number:"
+msgstr ""
+
+#: btwctl/window.py:247
+msgid "Copy diagnostics"
+msgstr ""
+
+#: btwctl/window.py:248
+msgid "Copy every readable register as JSON, for bug reports"
+msgstr ""
+
+#: btwctl/window.py:317
+msgid "The dongle is busy in another program; retrying…"
+msgstr ""
+
+#: btwctl/window.py:322
+msgid "No dongle found"
+msgstr ""
+
+#: btwctl/window.py:323
+msgid "Plug in the dongle (it also disappears briefly after HFP changes)."
+msgstr ""
+
+#: btwctl/window.py:343 btwctl/tray.py:111
+msgid "aptX Adaptive Low Latency"
+msgstr ""
+
+#: btwctl/window.py:343 btwctl/tray.py:111
+msgid "aptX Adaptive High Quality"
+msgstr ""
+
+#: btwctl/window.py:344
+msgid "no aptX Adaptive"
+msgstr ""
+
+#: btwctl/window.py:345
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Connected · {mode} · {address}"
+msgstr ""
+
+#: btwctl/window.py:347 btwctl/tray.py:109 btwctl/tray.py:128
+msgid "No headset connected"
+msgstr ""
+
+#: btwctl/window.py:349
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Last: {headset} ({state})"
+msgstr ""
+
+#: btwctl/window.py:351
+msgid "Connect a paired headset or pair a new one below."
+msgstr ""
+
+#: btwctl/window.py:369
+msgid "(empty)"
+msgstr ""
+
+#: btwctl/window.py:379
+msgid "✓ Connected"
+msgstr ""
+
+#: btwctl/window.py:382
+msgid "Connect"
+msgstr ""
+
+#: btwctl/window.py:390
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Use these settings whenever {headset} connects"
+msgstr ""
+
+#: btwctl/window.py:403
+msgid "✓ Background service running: it applies these automatically."
+msgstr ""
+
+#: btwctl/window.py:405
+msgid "The background service isn't running. Headset settings and game mode only work while it runs."
+msgstr ""
+
+#: btwctl/window.py:408
+msgid "Headset settings and game mode are applied by 'btwctl monitor'; keep it running."
+msgstr ""
+
+#: btwctl/window.py:469 btwctl/tray.py:47
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "{action} failed: {error}"
+msgstr ""
+
+#: btwctl/window.py:473
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle refused (status 0x{status:02x}). Is a compatible headset connected?"
+msgstr ""
+
+#: btwctl/window.py:506
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "These settings will be applied whenever {headset} connects."
+msgstr ""
+
+#: btwctl/window.py:510
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Settings for {headset} forgotten."
+msgstr ""
+
+#: btwctl/window.py:517
+msgid "Game mode on: Low Latency while a game runs."
+msgstr ""
+
+#: btwctl/window.py:517
+msgid "Game mode off."
+msgstr ""
+
+#: btwctl/window.py:526
+msgid "This needs PipeWire (pw-dump and wpctl aren't installed)."
+msgstr ""
+
+#: btwctl/window.py:528
+msgid "Sound will follow the headset."
+msgstr ""
+
+#: btwctl/window.py:528
+msgid "Sound won't switch automatically."
+msgstr ""
+
+#: btwctl/window.py:537
+msgid "Game list saved."
+msgstr ""
+
+#: btwctl/window.py:548
+msgid "Switching to aptX Low Latency"
+msgstr ""
+
+#: btwctl/window.py:548
+msgid "Switching to aptX High Quality"
+msgstr ""
+
+#: btwctl/window.py:554
+msgid "Turning the headset microphone on"
+msgstr ""
+
+#: btwctl/window.py:554
+msgid "Turning the headset microphone off"
+msgstr ""
+
+#: btwctl/window.py:560
+msgid "Turning automatic microphone switching on"
+msgstr ""
+
+#: btwctl/window.py:561
+msgid "Turning automatic microphone switching off"
+msgstr ""
+
+#: btwctl/window.py:570
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Connected to {headset}."
+msgstr ""
+
+#: btwctl/window.py:571
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle can't reach {headset}. Make sure it's on and not connected to another device, or put it in pairing mode and scan."
+msgstr ""
+
+#: btwctl/window.py:573
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "{headset} disconnected again."
+msgstr ""
+
+#: btwctl/window.py:574
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "No connection confirmed for {headset} yet."
+msgstr ""
+
+#: btwctl/window.py:580
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Connecting to {headset}"
+msgstr ""
+
+#: btwctl/window.py:583
+msgid "Disconnecting"
+msgstr ""
+
+#: btwctl/window.py:584
+msgid "Disconnected. (The dongle also starts looking for headsets.)"
+msgstr ""
+
+#: btwctl/window.py:589
+msgid "Forget all headsets?"
+msgstr ""
+
+#: btwctl/window.py:590
+msgid "The dongle will forget every paired headset and reconnect on USB.\nYou'll have to pair your headsets again."
+msgstr ""
+
+#: btwctl/window.py:595
+msgid "Forgetting all headsets"
+msgstr ""
+
+#: btwctl/window.py:596
+msgid "All headsets forgotten."
+msgstr ""
+
+#: btwctl/window.py:601
+msgid "Diagnostics copied to the clipboard."
+msgstr ""
+
+#: btwctl/window.py:602
+msgid "Reading every register"
+msgstr ""
+
+#: btwctl/window.py:613
+msgid "Disconnect headset?"
+msgstr ""
+
+#: btwctl/window.py:614
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Scanning disconnects {headset}. Continue?"
+msgstr ""
+
+#: btwctl/window.py:625
+msgid "Stop"
+msgstr ""
+
+#: btwctl/window.py:629
+msgid "Scanning… put the headset in pairing mode."
+msgstr ""
+
+#: btwctl/window.py:650
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "Scan failed: {error}"
+msgstr ""
+
+#: btwctl/window.py:653
+#. Keep the {names} in braces as they are; they're filled in by the program.
+msgid "The dongle connected to {headset} by itself."
+msgstr ""
+
+#: btwctl/window.py:656
+msgid "Click Pair while the headset is still in pairing mode."
+msgstr ""
+
+#: btwctl/window.py:658
+msgid "No headsets found. Is the headset in pairing mode?"
+msgstr ""
+
+#: btwctl/window.py:677
+msgid "Pair"
+msgstr ""
+
+#: btwctl/window.py:715 btwctl/window.py:54 btwctl/window.py:79 btwctl/window.py:325 btwctl/tray.py:27 btwctl/tray.py:70 btwctl/tray.py:47 btwctl/tray.py:104 btwctl/tray.py:50 btwctl/tray.py:107
+msgid "BT-W Control"
+msgstr ""

@@ -43,6 +43,7 @@ jobs:
           sh -n install-files.sh
           sh -n install.sh
           sh -n ci-install-check.sh
+          python3 tools/update-translations.py --check
           for f in packaging/*.sh; do sh -n "$f"; done
 
   # Follow the README's install steps exactly, on the distributions it names.
@@ -95,7 +96,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends debhelper dh-python python3-pytest
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential debhelper dh-python python3-pytest
       - run: packaging/build-deb.sh dist
       - name: Source package builds too (what a Launchpad PPA builds from)
         run: |
