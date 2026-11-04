@@ -1,7 +1,8 @@
 #!/bin/sh
 # Used by CI after following the README's install steps: is everything where it should be?
 set -ex
-test "$(command -v btw5-switch)" = /usr/local/bin/btw5-switch
+# (Fedora merged /usr/local/sbin into bin, so compare resolved paths)
+test "$(readlink -f "$(command -v btw5-switch)")" = "$(readlink -f /usr/local/bin/btw5-switch)"
 btw5-switch --version
 # no dongle in CI: must fail with the friendly message, not a traceback
 out=$(btw5-switch status 2>&1) && exit 1
