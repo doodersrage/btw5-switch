@@ -110,7 +110,10 @@ jobs:
         run: |
           dpkg-deb -e dist/btwctl_*_all.deb /tmp/debctl
           cat /tmp/debctl/postinst
-          ! grep -E "deb-systemd-helper( --user)? enable|systemctl (--user |--global )?enable" /tmp/debctl/postinst
+          # (re-enabling for users who had it enabled before an upgrade is fine;
+          #  enabling on new installs is what debhelper does by default)
+          ! grep -q "new installations run enable" /tmp/debctl/postinst
+          ! grep -E "systemctl (--user |--global )?enable" /tmp/debctl/postinst
       - run: sudo apt-get install -y ./dist/btwctl_*_all.deb
       - run: sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 desktop-file-utils
       - run: EXPECT_BIN=/usr/bin/btwctl PYTHON=/usr/bin/python3 ./ci-install-check.sh
