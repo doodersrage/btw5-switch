@@ -3,7 +3,7 @@
 %global srcname btwctl
 
 Name:           btwctl
-Version:        0.8
+Version:        0.9
 Release:        1%{?dist}
 Summary:        Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
 License:        MIT
@@ -74,6 +74,8 @@ udevadm control --reload-rules >/dev/null 2>&1 || :
 %{_datadir}/fish/vendor_completions.d/btw5-switch.fish
 
 %changelog
+* Wed Nov 04 2026 Robert McDowell <doodersrage@gmail.com> - 0.9-1
+- Automation fixes, man page, AppStream metadata
 * Tue Nov 03 2026 Robert McDowell <doodersrage@gmail.com> - 0.8-1
 - Audio follows the headset; PPA/COPR packaging
 * Tue Nov 03 2026 Robert McDowell <doodersrage@gmail.com> - 0.7-1
