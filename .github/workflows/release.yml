@@ -27,8 +27,18 @@ jobs:
       - uses: actions/upload-artifact@v4
         with: {name: rpm, path: dist/*.rpm}
 
+  arch:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm git
+      - uses: actions/checkout@v5
+      - run: packaging/build-arch.sh dist
+      - uses: actions/upload-artifact@v4
+        with: {name: arch, path: dist/*.pkg.tar.zst}
+
   release:
-    needs: [deb, rpm]
+    needs: [deb, rpm, arch]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -44,7 +54,7 @@ jobs:
           cat >> notes.md <<'MD'
 
           ### Install
-          - **Arch Linux**: from the AUR (`btw5-switch`), or `makepkg -si` in a checkout
+          - **Arch Linux**: download the `.pkg.tar.zst` below, then `sudo pacman -U ./btw5-switch-*-any.pkg.tar.zst`
           - **Debian / Ubuntu**: download the `.deb` below, then `sudo apt install ./btw5-switch_*_all.deb`
           - **Fedora**: download the `.rpm` below, then `sudo dnf install ./btw5-switch-*.noarch.rpm`
           - **Others**: see the [README](https://github.com/doodersrage/btw5-switch#install)

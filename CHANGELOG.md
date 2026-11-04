@@ -12,4 +12,4 @@ First release.
 - **Command line tool** with JSON output, shell completions (bash, zsh, fish), `--notify` for keyboard shortcuts, a waybar/polybar module and app-menu quick actions.
 - Several programs can use the dongle at once (the background service shares it).
 - `--device VID:PID` to try other Creative BT-W dongles.
-- Packages: Arch (`makepkg -si`, AUR), Debian/Ubuntu `.deb`, Fedora `.rpm`, and `install.sh` for other distributions.
+- Packages: Arch (`.pkg.tar.zst`), Debian/Ubuntu (`.deb`) and Fedora (`.rpm`) on the release page, `makepkg -si` from a checkout, and `install.sh` for other distributions.

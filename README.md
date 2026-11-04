@@ -23,6 +23,15 @@ This tool is for the dongle's settings and pairing.
 
 ### Arch Linux and derivatives (Manjaro, EndeavourOS, CachyOS)
 
+Download `btw5-switch-…-any.pkg.tar.zst` from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest), then:
+
+```sh
+sudo pacman -S --needed python-pyqt6        # for the window and tray icon
+sudo pacman -U ./btw5-switch-*-any.pkg.tar.zst
+```
+
+Or build it from source:
+
 ```sh
 sudo pacman -S --needed base-devel git python-pyqt6
 git clone https://github.com/doodersrage/btw5-switch
@@ -211,7 +220,7 @@ For game mode, run `btw5-switch game-mode` while the game is running: if it says
 ## Updating and uninstalling
 
 Update:
-- `.deb` / `.rpm`: install the new package from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest) the same way.
+- Release packages (`.pkg.tar.zst`, `.deb`, `.rpm`): install the new package from the [latest release](https://github.com/doodersrage/btw5-switch/releases/latest) the same way.
 - From source: in the `btw5-switch` folder, run `git pull`, then `makepkg -si` (Arch) or `sudo ./install.sh`.
 
 Uninstall: `sudo apt remove btw5-switch`, `sudo dnf remove btw5-switch` or `sudo pacman -R btw5-switch`; for `install.sh`, run `sudo ./install.sh --uninstall` in the `btw5-switch` folder.

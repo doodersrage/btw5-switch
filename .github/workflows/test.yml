@@ -43,6 +43,7 @@ jobs:
           sh -n install-files.sh
           sh -n install.sh
           sh -n ci-install-check.sh
+          for f in packaging/*.sh; do sh -n "$f"; done
 
   # Follow the README's install steps exactly, on the distributions it names.
   install-ubuntu:
@@ -126,3 +127,19 @@ jobs:
         with:
           name: rpm
           path: dist/*.rpm
+
+  package-arch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container: archlinux:latest
+    steps:
+      - run: pacman -Syu --noconfirm git
+      - uses: actions/checkout@v5
+      - run: packaging/build-arch.sh dist
+      - run: pacman -U --noconfirm dist/btw5-switch-*-any.pkg.tar.zst
+      - run: pacman -S --noconfirm --needed desktop-file-utils mesa libxkbcommon fontconfig
+      - run: EXPECT_BIN=/usr/bin/btw5-switch PYTHON=/usr/bin/python ./ci-install-check.sh
+      - run: |
+          pacman -R --noconfirm btw5-switch
+          ! command -v btw5-switch
+          test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules
