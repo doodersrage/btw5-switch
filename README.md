@@ -146,3 +146,8 @@ Not yet confirmed on hardware: `scan` actually listing a headset, `pair` complet
 If something doesn't behave as expected, run it with `-v` and open an issue with the output.
 
 Based on [RaphaelWimmer/btw5-switch](https://github.com/RaphaelWimmer/btw5-switch). Pull requests welcome.
+
+## License
+
+The code is released under the [MIT License](LICENSE).
+The USB capture (`bt-w5.pcapng`), its screenshot (`btw5-wireshark.png`) and the original protocol notes are Raphael Wimmer's work from the upstream repository, which doesn't state a license yet.
