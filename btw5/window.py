@@ -88,6 +88,27 @@ class Window(W.QMainWindow):
         head.addWidget(self.refresh_btn, 0, Qt.AlignmentFlag.AlignTop)
         root.addLayout(head)
 
+        # messages: a banner that wraps, so long hints aren't cut off like in a status bar
+        self.banner = W.QFrame()
+        self.banner.setObjectName("banner")
+        row = W.QHBoxLayout(self.banner)
+        row.setContentsMargins(10, 6, 4, 6)
+        self.banner_text = W.QLabel()
+        self.banner_text.setWordWrap(True)
+        self.banner_text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        row.addWidget(self.banner_text, 1)
+        close = W.QToolButton()
+        close.setIcon(theme_icon("window-close", "dialog-close"))
+        close.setAutoRaise(True)
+        close.setToolTip("Dismiss")
+        close.clicked.connect(self.banner.hide)
+        row.addWidget(close, 0, Qt.AlignmentFlag.AlignTop)
+        self.banner.hide()
+        root.addWidget(self.banner)
+        self.banner_timer = QtCore.QTimer(self)
+        self.banner_timer.setSingleShot(True)
+        self.banner_timer.timeout.connect(self.banner.hide)
+
         # audio settings
         self.audio = W.QGroupBox("Audio")
         form = W.QFormLayout(self.audio)
@@ -299,8 +320,33 @@ class Window(W.QMainWindow):
         self.scan_secs.setEnabled(not self.scanning)
         self.found.setEnabled(self.scanning or (idle and ok))
 
-    def say(self, text, ms=6000):
-        self.statusBar().showMessage(text, ms)
+    # Breeze colours; "info" follows the theme's highlight colour
+    BANNER_COLORS = {"ok": (39, 174, 96), "warn": (246, 116, 0), "error": (218, 68, 83)}
+
+    def say(self, text, ms=6000, kind="info"):
+        """Show a message in the banner; it hides after ms (0 = until replaced or dismissed)."""
+        if kind in self.BANNER_COLORS:
+            r, g, b = self.BANNER_COLORS[kind]
+        else:
+            c = self.palette().color(QtGui.QPalette.ColorRole.Highlight)
+            r, g, b = c.red(), c.green(), c.blue()
+        self.banner.setStyleSheet(
+            f"#banner {{ background: rgba({r},{g},{b},40); border: 1px solid rgb({r},{g},{b});"
+            " border-radius: 4px; }")
+        self.banner_text.setText(text)
+        self.banner.show()
+        if ms:
+            self.banner_timer.start(ms)
+        else:
+            self.banner_timer.stop()
+
+    def clear_message(self):
+        self.banner_timer.stop()
+        self.banner.hide()
+
+    def message(self):
+        """The message currently shown ("" if none)."""
+        return "" if self.banner.isHidden() else self.banner_text.text()
 
     # --- actions -----------------------------------------------------------------
 
@@ -312,13 +358,14 @@ class Window(W.QMainWindow):
             if self.closed:
                 return
             if isinstance(r, Exception):
-                self.say(f"{doing} failed: {r}", 10000)
+                self.say(f"{doing} failed: {r}", 12000, "error")
             elif done:
                 done(r)
             elif isinstance(r, int) and r != P.STATUS_OK:
-                self.say(f"The dongle refused (status 0x{r:02x}). Is a compatible headset connected?", 10000)
+                self.say(f"The dongle refused (status 0x{r:02x}). Is a compatible headset connected?",
+                         12000, "warn")
             else:
-                self.statusBar().clearMessage()
+                self.clear_message()
             for ms in refresh_after:
                 QtCore.QTimer.singleShot(ms, self.refresh)
         self.worker.with_device(fn, finished)
@@ -343,13 +390,17 @@ class Window(W.QMainWindow):
 
         def done(r):
             result, name = r
-            self.say({
+            text = {
                 "connected": f"Connected to {name or label}.",
                 "rejected": f"The dongle can't reach {label}. Make sure it's on and not connected "
                             "to another device, or put it in pairing mode and scan.",
                 "disconnected": f"{label} disconnected again.",
                 "timeout": f"No connection confirmed for {label} yet.",
-            }[result], 12000)
+            }[result]
+            if result == "connected":
+                self.say(text, 8000, "ok")
+            else:
+                self.say(text, 20000, "warn")
         self.act(f"Connecting to {label}", lambda d: d.connect_and_wait(addr, CONNECT_TIMEOUT), done)
 
     def disconnect(self):
@@ -366,12 +417,12 @@ class Window(W.QMainWindow):
             W.QMessageBox.StandardButton.Cancel)
         if answer == W.QMessageBox.StandardButton.Yes:
             self.act("Forgetting all headsets", lambda d: d.forget_all(),
-                     lambda r: self.say("All headsets forgotten."), refresh_after=(4000, 8000))
+                     lambda r: self.say("All headsets forgotten.", kind="ok"), refresh_after=(4000, 8000))
 
     def copy_diagnostics(self):
         def done(out):
             W.QApplication.clipboard().setText(json.dumps(out, indent=2))
-            self.say("Diagnostics copied to the clipboard.")
+            self.say("Diagnostics copied to the clipboard.", kind="ok")
         self.act("Reading every register", read_dump, done, refresh_after=())
 
     # --- scanning ----------------------------------------------------------------
@@ -420,14 +471,14 @@ class Window(W.QMainWindow):
             if self.closed:
                 return
             if isinstance(r, Exception):
-                self.say(f"Scan failed: {r}", 10000)
+                self.say(f"Scan failed: {r}", 12000, "error")
             elif "conn" in auto:
                 _, addr, name = auto["conn"]
-                self.say(f"The dongle connected to {P.headset_label(addr, name)} by itself.", 12000)
+                self.say(f"The dongle connected to {P.headset_label(addr, name)} by itself.", 12000, "ok")
             elif self.scan_rows:
                 self.say("Click Pair while the headset is still in pairing mode.", 12000)
             else:
-                self.say("No headsets found. Is the headset in pairing mode?", 12000)
+                self.say("No headsets found. Is the headset in pairing mode?", 12000, "warn")
             self.refresh()
             self.update_enabled()
 

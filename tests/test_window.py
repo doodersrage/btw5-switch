@@ -82,7 +82,7 @@ def test_scan_then_pair(app, make):
     wait(app, lambda: w.found.rowCount() == 1)
     assert w.found.item(0, 0).text() == "X3" and "-43 dBm" in w.found.item(0, 2).text()
     w.found.cellWidget(0, 3).click()          # Pair: stops the scan, then connects
-    wait(app, lambda: "Connected to New headset" in w.statusBar().currentMessage())
+    wait(app, lambda: "Connected to New headset" in w.message())
     assert not w.scanning and w.scan_btn.text() == "Scan"
     assert (P.CMD_BT, bytes([P.BT_SCAN, P.SCAN_CONNECT]) + X3) in fake.sent
 
@@ -91,7 +91,7 @@ def test_scan_auto_connect(app, make):
     fake = FakeDongle(scan_frames=[conn_frame(P.CONN_CONNECTED, X3, b"X3")])
     w = make(fake)
     w.toggle_scan()   # asks to disconnect the current headset; patched to Yes
-    wait(app, lambda: "connected to X3" in w.statusBar().currentMessage())
+    wait(app, lambda: "connected to X3" in w.message())
     assert w.found.rowCount() == 0
 
 
@@ -109,7 +109,7 @@ def test_connect_rejected_message(app, make):
     fake = FakeDongle(connect_status=P.STATUS_REJECTED)
     w = make(fake)
     w.connect_to(X3, "X3")
-    wait(app, lambda: "can't reach X3" in w.statusBar().currentMessage())
+    wait(app, lambda: "can't reach X3" in w.message())
 
 
 def test_forget_all(app, make):
@@ -126,3 +126,24 @@ def test_dongle_missing(make):
     w = make(Missing())
     assert w.title.text() == "BT-W5 not found"
     assert not w.hq.isEnabled() and not w.scan_btn.isEnabled() and not w.forget_btn.isEnabled()
+
+
+def test_long_messages_wrap_instead_of_being_cut_off(app, make):
+    """The status bar used to cut long hints in half (seen on real hardware)."""
+    w = make(FakeDongle(connect_status=P.STATUS_REJECTED))
+    w.connect_to(X3, "MOMENTUM 4")
+    wait(app, lambda: "can't reach" in w.message())
+    label = w.banner_text
+    assert label.wordWrap()
+    one_line = label.fontMetrics().height()
+    assert label.fontMetrics().horizontalAdvance(label.text()) > label.width()  # too long for one line...
+    wait(app, lambda: label.height() >= 2 * one_line, timeout=3)                # ...so it gets more lines
+    assert label.width() <= w.width()
+
+
+def test_message_banner_dismiss(app, make):
+    w = make(FakeDongle())
+    w.say("hello", 0)
+    assert w.message() == "hello"
+    w.banner.findChild(QtWidgets.QToolButton).click()
+    assert w.message() == ""

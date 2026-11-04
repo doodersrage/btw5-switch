@@ -235,7 +235,7 @@ Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB acce
 ## Status
 
 Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `hfp`, `auto-hfp`, `disconnect`, `monitor` (including following the dongle through HFP re-enumeration and sharing it with other commands), `waybar`, the tray and the settings window.
-Not yet confirmed on hardware: `scan` actually listing a headset, `pair` completing a connection (so far the dongle refused because the headset wasn't reachable), and `forget`.
+Scanning and pairing a headset from the window have been confirmed on hardware too. Not yet confirmed: `forget`.
 The install steps for Ubuntu and Fedora are run automatically on every change (see the tests badge).
 
 Based on [RaphaelWimmer/btw5-switch](https://github.com/RaphaelWimmer/btw5-switch). Pull requests welcome.

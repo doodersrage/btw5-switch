@@ -45,7 +45,7 @@ while time.time() < end and not (w.info_loaded and not w.worker.busy):
     app.processEvents(); time.sleep(0.02)
 w.add_found(bytes.fromhex("68001abc5ceb"), "Tranya X3", -48)
 w.add_found(bytes.fromhex("f4b688aa0412"), "JBL Tune 760NC", -71)
-w.statusBar().showMessage("Click Pair while the headset is still in pairing mode.")
+w.say("Click Pair while the headset is still in pairing mode.", 0)
 for _ in range(20): app.processEvents(); time.sleep(0.02)
 w.grab().save(sys.argv[1])
 print(w.title.text(), "|", w.subtitle.text(), "|", w.serial.text())
