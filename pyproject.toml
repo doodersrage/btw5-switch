@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "btw5-switch"
+dynamic = ["version"]
+description = "Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["pyusb"]
+
+[project.optional-dependencies]
+tray = ["PyQt6"]
+
+[project.scripts]
+btw5-switch = "btw5.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/doodersrage/btw5-switch"
+
+[tool.setuptools]
+packages = ["btw5"]
+
+[tool.setuptools.dynamic]
+version = {attr = "btw5.__version__"}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

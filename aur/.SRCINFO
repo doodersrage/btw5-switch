@@ -1,0 +1,22 @@
+pkgbase = btw5-switch
+	pkgdesc = Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)
+	pkgver = 0.5
+	pkgrel = 1
+	url = https://github.com/doodersrage/btw5-switch
+	install = btw5-switch.install
+	arch = any
+	license = LicenseRef-unknown
+	checkdepends = python-pytest
+	makedepends = python-build
+	makedepends = python-installer
+	makedepends = python-setuptools
+	makedepends = python-wheel
+	depends = python
+	depends = python-pyusb
+	optdepends = python-pyqt6: tray icon (btw5-switch tray)
+	optdepends = pyside6: tray icon, alternative to PyQt6
+	optdepends = libnotify: desktop notifications (btw5-switch monitor --notify)
+	source = btw5-switch-0.5.tar.gz::https://github.com/doodersrage/btw5-switch/archive/refs/tags/v0.5.tar.gz
+	sha256sums = SKIP
+
+pkgname = btw5-switch

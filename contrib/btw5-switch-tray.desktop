@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=BT-W5 Switch
+GenericName=Bluetooth audio dongle control
+Comment=Tray icon for the Creative BT-W5: aptX mode, HFP and headset switching
+Exec=btw5-switch tray
+Icon=audio-headphones
+Terminal=false
+Categories=AudioVideo;Audio;Settings;HardwareSettings;
+Keywords=bluetooth;aptx;headset;creative;
+X-GNOME-Autostart-enabled=true

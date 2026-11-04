@@ -1,0 +1,38 @@
+# Maintainer: Robert McDowell <doodersrage@gmail.com>
+#
+# Release PKGBUILD for the AUR. To publish a new version:
+#   1. bump btw5/__init__.py, tag vX.Y and push the tag
+#   2. set pkgver below, run `updpkgsums` and `makepkg --printsrcinfo > .SRCINFO`
+#   3. copy PKGBUILD, .SRCINFO and btw5-switch.install into the AUR git repo and push
+pkgname=btw5-switch
+pkgver=0.5
+pkgrel=1
+pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
+arch=('any')
+url="https://github.com/doodersrage/btw5-switch"
+license=('LicenseRef-unknown')  # TODO: needs a real license before publishing
+depends=('python' 'python-pyusb')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest')
+optdepends=('python-pyqt6: tray icon (btw5-switch tray)'
+            'pyside6: tray icon, alternative to PyQt6'
+            'libnotify: desktop notifications (btw5-switch monitor --notify)')
+install=btw5-switch.install
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')  # replace with `updpkgsums` once the tag exists
+
+build() {
+  cd "$pkgname-$pkgver"
+  /usr/bin/python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$pkgname-$pkgver"
+  /usr/bin/python -m pytest -q -p no:cacheprovider
+}
+
+package() {
+  cd "$pkgname-$pkgver"
+  /usr/bin/python -m installer --destdir="$pkgdir" dist/*.whl
+  ./install-files.sh "$pkgdir"
+}

@@ -1,17 +1,31 @@
-# Maintainer: your name <you@example.com>
+# Builds the package from this source checkout:  makepkg -si
+# (aur/PKGBUILD is the release version that downloads a tagged tarball.)
 pkgname=btw5-switch
-pkgver=0.4
+pkgver=0.5
 pkgrel=1
 pkgdesc="Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
 arch=('any')
 url="https://github.com/doodersrage/btw5-switch"
-license=('unknown')
+license=('LicenseRef-unknown')
 depends=('python' 'python-pyusb')
+makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+checkdepends=('python-pytest')
+optdepends=('python-pyqt6: tray icon (btw5-switch tray)'
+            'pyside6: tray icon, alternative to PyQt6'
+            'libnotify: desktop notifications (btw5-switch monitor --notify)')
 install=btw5-switch.install
-source=('btw5-switch.py' '70-btw5-switch.rules')
-sha256sums=('SKIP' 'SKIP')
+
+build() {
+  cd "$startdir"
+  /usr/bin/python -m build --wheel --no-isolation --outdir "$srcdir/dist"
+}
+
+check() {
+  cd "$startdir"
+  /usr/bin/python -m pytest -q -p no:cacheprovider
+}
 
 package() {
-  install -Dm755 "$srcdir/btw5-switch.py" "$pkgdir/usr/bin/btw5-switch"
-  install -Dm644 "$srcdir/70-btw5-switch.rules" "$pkgdir/usr/lib/udev/rules.d/70-btw5-switch.rules"
+  /usr/bin/python -m installer --destdir="$pkgdir" "$srcdir"/dist/*.whl
+  "$startdir/install-files.sh" "$pkgdir"
 }

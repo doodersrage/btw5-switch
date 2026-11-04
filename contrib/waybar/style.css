@@ -1,0 +1,4 @@
+/* Optional styling for the BT-W5 module. Classes: connected, disconnected, absent, error */
+#custom-btw5.disconnected { opacity: 0.6; }
+#custom-btw5.absent { padding: 0; margin: 0; }
+#custom-btw5.error { color: #e78284; }

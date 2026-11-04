@@ -1,0 +1,55 @@
+#compdef btw5-switch
+# zsh completion for btw5-switch
+
+_btw5_paired_names() {
+    local -a names
+    names=(${(f)"$(btw5-switch paired --names 2>/dev/null)"})
+    _describe -t headsets 'paired headset' names
+}
+
+_btw5-switch() {
+    local -a commands
+    commands=(
+        'status:show connected headset, aptX, HFP and auto-HFP settings'
+        'info:show firmware version and serial number'
+        'dump:show every readable register'
+        'll:aptX Adaptive Low Latency mode'
+        'hq:aptX Adaptive High Quality mode'
+        'toggle:switch between aptX Low Latency and High Quality'
+        'hfp:enable/disable HFP (headset microphone)'
+        'auto-hfp:enable/disable automatic HFP switching'
+        'scan:disconnect headset and list nearby headsets'
+        'disconnect:disconnect the current headset'
+        'pair:connect to a headset by address or paired name'
+        'paired:list the remembered headsets'
+        'forget:forget all paired headsets'
+        'monitor:print connection and setting changes as they happen'
+        'waybar:print status as JSON for a status bar'
+        'tray:run a system tray icon'
+        'raw:send a raw command'
+    )
+    _arguments -C \
+        '(-v --verbose)'{-v,--verbose}'[hex-dump USB traffic]' \
+        '(- *)'{-h,--help}'[show help]' \
+        '(- *)'{-V,--version}'[show version]' \
+        '1:command:->command' \
+        '*::arg:->args'
+    case $state in
+        command) _describe -t commands 'btw5-switch command' commands ;;
+        args)
+            case $words[1] in
+                status|info|dump) _arguments '--json[machine-readable output]' ;;
+                paired) _arguments '--json[machine-readable output]' '--names[names only]' ;;
+                scan) _arguments '--json[machine-readable output]' '1:seconds:' ;;
+                hfp|auto-hfp) _arguments '1:state:(on off)' ;;
+                pair) _arguments '--timeout[seconds to wait]:seconds:' '1:headset:_btw5_paired_names' ;;
+                forget) _arguments '(-y --yes)'{-y,--yes}'[do not ask]' ;;
+                monitor) _arguments '--notify[desktop notifications]' '--all[print every report]' \
+                                    '--no-reconnect[exit when the dongle disappears]' ;;
+                waybar|tray) _arguments '--interval[seconds]:seconds:' ;;
+                raw) _arguments '--listen[seconds to print replies]:seconds:' '*:hex byte:' ;;
+            esac ;;
+    esac
+}
+
+_btw5-switch "$@"
