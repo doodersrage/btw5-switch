@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build the Debian/Ubuntu package with the debian/ packaging:  packaging/build-deb.sh [outdir]
-# Needs: build-essential debhelper dh-python python3-pytest (dpkg-buildpackage runs the tests).
+# Needs: build-essential debhelper dh-python python3-pytest python3-usb (dpkg-buildpackage runs the tests).
 set -e
 src=$(cd "$(dirname "$0")/.." && pwd)
 out=${1:-$src/dist}

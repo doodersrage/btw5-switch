@@ -96,7 +96,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential debhelper dh-python python3-pytest
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends build-essential debhelper dh-python python3-pytest python3-usb
       - run: packaging/build-deb.sh dist
       - name: Source package builds too (what a Launchpad PPA builds from)
         run: |
