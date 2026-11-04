@@ -102,3 +102,28 @@ def test_errors_become_messages(monkeypatch):
     monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: Busy())
     with pytest.raises(SystemExit, match="in use by another program"):
         cli.main(["status"])
+
+
+X3 = bytes.fromhex("68001abc5ceb")
+
+
+def test_scan_lists_headsets(capsys, monkeypatch):
+    from tests.fakes import scan_frame
+    fake = FakeDongle(scan_frames=[scan_frame(X3, b"X3", -43), scan_frame(X3, b"X3", -40)])
+    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    out = run(capsys, "scan", "0.3")
+    assert "68:00:1a:bc:5c:eb   -43 dBm  X3" in out and "pair <address>" in out
+    res = json.loads(run(capsys, "scan", "0.3", "--json"))
+    assert res == {"found": [{"address": "68:00:1a:bc:5c:eb", "name": "X3", "rssi": -40}],
+                   "connected": None}
+
+
+def test_scan_reports_auto_connect(capsys, monkeypatch):
+    """Seen on real hardware: the dongle connects to a headset in pairing mode on its own."""
+    from tests.fakes import conn_frame
+    fake = FakeDongle(scan_frames=[conn_frame(P.CONN_CONNECTING, X3, b"X3"),
+                                   conn_frame(P.CONN_CONNECTED, X3, b"X3")])
+    monkeypatch.setattr("btw5.broker.default_transport", lambda *a, **k: fake)
+    out = run(capsys, "scan", "5")
+    assert "connected to X3 (68:00:1a:bc:5c:eb) by itself" in out
+    assert "No devices found" not in out

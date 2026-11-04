@@ -54,6 +54,7 @@ btw5-switch raw 6b 09 03        # send a raw command and print replies (protocol
 `status`, `info`, `paired`, `scan` and `dump` take `--json`.
 
 Pairing a new headset: put it in pairing mode, run `btw5-switch scan`, then `btw5-switch pair <address>` while it's still in pairing mode.
+Often the dongle doesn't list the headset but connects to it by itself; `scan` then says so and stops.
 The dongle only connects to headsets it can reach, so if `pair` says the dongle refused (status `0x80`), turn the headset on, make sure it isn't connected to another device, or put it in pairing mode.
 
 Notes:
@@ -106,7 +107,7 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 | `6b 0a 01 01` / `6b 0a 01 02` | HFP on / off | ack, then USB re-enumeration |
 | `6b 0a 02 01` / `6b 0a 02 00` | auto-HFP on / off | ack, `6b 09 07 <val>` |
 | `6b 09 <key>` | read setting: `03` aptX, `06` HFP, `07` auto-HFP, `08` active aptX mode | `6b 09 <key> <val>` |
-| `6b 04 01` | disconnect and scan | `6b 05 <addr6> <nlen> <name> <rssi int16 LE>` per device |
+| `6b 04 01` | disconnect and scan | `6b 05 <addr6> <nlen> <name> <rssi int16 LE>` per device, or `6b 06` connection events if it connects to a headset in pairing mode by itself |
 | `6b 04 02 <addr6>` | connect to address | ack (status `80` if the headset can't be reached), then `6b 06 08`/`0b` |
 | `6b 06` | current connection | `6b 06 <state> <addr6> 20 <name[32]>`; no reply right after a scan disconnect |
 | `6b 02 <slot>` | read pairing slot 0-3 | `6b 02 <slot> 80 <addr6> 1f <name[31]>` (`00` instead of `80` past the last slot) |

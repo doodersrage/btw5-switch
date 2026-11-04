@@ -152,21 +152,35 @@ def cmd_scan(d, args):
     if not args.seconds:
         return
     found = {}
+    connected = None
     for cmd, p in d.listen(args.seconds):
-        r = P.parse_scan(p) if cmd == P.CMD_BT else None
-        if r is None:
+        if cmd != P.CMD_BT:
             continue
-        addr, name, rssi = r
-        if addr not in found and not args.json:
-            print(f"  {P.fmt_addr(addr)}  {rssi:4d} dBm  {name}")
-        found[addr] = {"address": P.fmt_addr(addr), "name": name,
-                       "rssi": max(rssi, found.get(addr, {}).get("rssi", -999))}
+        r = P.parse_scan(p)
+        if r:
+            addr, name, rssi = r
+            if addr not in found and not args.json:
+                print(f"  {P.fmt_addr(addr)}  {rssi:4d} dBm  {name}")
+            found[addr] = {"address": P.fmt_addr(addr), "name": name,
+                           "rssi": max(rssi, found.get(addr, {}).get("rssi", -999))}
+            continue
+        # With a headset in pairing mode nearby, the dongle often connects to
+        # it by itself and sends connection events instead of scan results.
+        conn = P.parse_conn(p)
+        if conn and conn[0] == P.CONN_CONNECTED:
+            connected = {"address": P.fmt_addr(conn[1]), "name": conn[2]}
+            if not args.json:
+                print(f"The dongle connected to {P.headset_label(conn[1], conn[2])} by itself.")
+            break
     if args.json:
-        return emit_json(list(found.values()))
+        return emit_json({"found": list(found.values()), "connected": connected})
+    if connected:
+        return
     if found:
         print("\nConnect with:  btw5-switch pair <address>   (while the headset is still in pairing mode)")
     else:
-        print("No devices found.")
+        print("No devices found. (The dongle sometimes connects to a headset in pairing mode by "
+              "itself; check 'btw5-switch status'.)")
 
 
 def resolve_headset(d, target):

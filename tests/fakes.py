@@ -21,6 +21,11 @@ def conn_frame(state, addr=HEADSET, name=NAME):
     return report(P.CMD_BT, bytes([P.BT_CONN, state]) + addr + bytes([32]) + name.ljust(32, b"\0"))
 
 
+def scan_frame(addr, name, rssi):
+    return report(P.CMD_BT, bytes([0x05]) + addr + bytes([len(name)]) + name
+                  + rssi.to_bytes(2, "little", signed=True) + b"\0")
+
+
 def slot_frame(slot, addr=bytes(6), name=b"", valid=True):
     return report(P.CMD_BT, bytes([P.BT_SLOT, slot, 0x80 if valid else 0]) + addr + bytes([31])
                   + name.ljust(31, b"\0") + bytes(4))
@@ -29,10 +34,12 @@ def slot_frame(slot, addr=bytes(6), name=b"", valid=True):
 class FakeDongle:
     """Transport that answers like a BT-W5 with one paired, connected headset."""
 
-    def __init__(self, connected=True, aptx=0x40, hfp=0x02, auto=0x00, connect_status=0x00):
+    def __init__(self, connected=True, aptx=0x40, hfp=0x02, auto=0x00, connect_status=0x00,
+                 scan_frames=()):
         self.connected = connected
         self.settings = {P.GET_APTX: aptx, P.GET_APTX_ACTIVE: aptx, P.GET_HFP: hfp, P.GET_AUTO_HFP: auto}
         self.connect_status = connect_status
+        self.scan_frames = list(scan_frames)  # reports sent after a scan starts
         self.queue = []
         self.sent = []
         self.opened = False
@@ -74,6 +81,12 @@ class FakeDongle:
                 q.append(slot_frame(0, HEADSET, NAME))
             else:
                 q.append(slot_frame(slot, valid=slot < P.PAIR_SLOTS))
+        elif cmd == P.CMD_BT and p[0] == P.BT_SCAN and p[1] == P.SCAN_START:
+            q.append(ack(P.CMD_BT, 0x00, P.BT_SCAN))
+            if self.connected:
+                q.append(conn_frame(P.CONN_DISCONNECTED))
+            self.connected = False
+            q += self.scan_frames
         elif cmd == P.CMD_BT and p[0] == P.BT_SCAN and p[1] == P.SCAN_CONNECT:
             q.append(ack(P.CMD_BT, self.connect_status, P.BT_SCAN))
             if self.connect_status == 0:
