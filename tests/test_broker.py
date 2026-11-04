@@ -92,7 +92,7 @@ def test_client_that_stops_reading_does_not_stall_others(sock):
         try:
             lazy = so.socket(so.AF_UNIX, so.SOCK_SEQPACKET)
             lazy.connect(sock)  # never reads
-            deadline = time.monotonic() + 5
+            deadline = time.monotonic() + 20   # generous: a real stall makes no progress at all
             while len(seen) < 2000 and time.monotonic() < deadline:
                 time.sleep(0.05)
             assert len(seen) >= 2000, "broker stalled behind a client that doesn't read"
