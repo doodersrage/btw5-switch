@@ -1,0 +1,159 @@
+.TH BTWCTL 1 "November 2026" "btwctl" "User Commands"
+.SH NAME
+btwctl \- control the Creative BT\-W5 and BT\-W6 Bluetooth audio dongles
+.SH SYNOPSIS
+.B btwctl
+.RB [ \-v ]
+.RB [ \-\-notify ]
+.RB [ \-\-device
+.IR VID:PID ]
+.I command
+.RI [ arguments ]
+.SH DESCRIPTION
+.B btwctl
+changes the settings of a Creative BT\-W5 or BT\-W6 USB Bluetooth audio dongle: the aptX Adaptive
+mode, the headset microphone (HFP), pairing and switching between headsets. It can also apply
+settings automatically: per\-headset preferences, Low Latency while a game runs, and making the
+dongle the default audio device while a headset is connected.
+.PP
+The dongle is found automatically. Sound itself needs no tool: the dongle is a standard USB sound
+card, and volume is set from the desktop as usual.
+.PP
+.B btwctl gui
+opens a settings window,
+.B btwctl tray
+a system tray icon. Before version 0.7 the program was called
+.BR btw5\-switch ,
+which still works as a command name.
+.SH OPTIONS
+.TP
+.BR \-v ", " \-\-verbose
+Also show the raw USB traffic.
+.TP
+.B \-\-notify
+Show the result as a desktop notification, for keyboard shortcuts and launchers.
+.TP
+.BI \-\-device " VID:PID"
+Use the dongle with this USB ID (for example
+.BR 041e:3130 ),
+to try other Creative dongles. Also set by the
+.B BTW5_DEVICE
+environment variable.
+.TP
+.BR \-V ", " \-\-version
+Print the version.
+.SH COMMANDS
+.SS Status
+.TP
+.BR status " [" \-\-json ]
+Connected headset, aptX mode, microphone and automatic microphone switching.
+.TP
+.BR info " [" \-\-json ]
+Dongle model, firmware version and serial number.
+.TP
+.BR paired " [" \-\-json "] [" \-\-names ]
+The 4 pairing slots.
+.TP
+.BR dump " [" \-\-json ]
+Every readable register, for bug reports. Read\-only.
+.SS Settings
+.TP
+.BR ll ", " hq ", " toggle
+aptX Adaptive Low Latency, High Quality, or switch between the two. Needs a connected aptX Adaptive
+headset.
+.TP
+.BR hfp " on|off"
+Headset microphone (HFP). The dongle reconnects, so audio drops for a few seconds.
+.TP
+.BR auto\-hfp " on|off"
+Switch to the microphone automatically when an application uses it.
+.SS Headsets
+.TP
+.BR scan " [\fIseconds\fR] [" \-\-json ]
+Disconnect the current headset and list nearby headsets in pairing mode (default 15 seconds). The
+dongle often connects to a headset in pairing mode by itself; scan then says so.
+.TP
+.BI pair " headset" \fR\ [\fB\-\-timeout \fIseconds\fR]
+Connect to a headset: an address shown by
+.B scan
+or (part of) the name of a paired headset.
+.TP
+.B disconnect
+Disconnect the current headset.
+.TP
+.BR forget " [" \-y ]
+Forget all paired headsets (asks first unless
+.BR \-y ).
+.SS Automation
+These are applied by the background service
+.RB ( "btwctl monitor" ,
+see
+.BR FILES ).
+.TP
+.BR prefer " [\fIheadset\fR] [" \-\-aptx " hq|ll] [" \-\-hfp " on|off] [" \-\-auto\-hfp " on|off] [" \-\-current "] [" \-\-clear ]
+Settings to apply whenever that headset connects. Without arguments, list them.
+.I headset
+can be
+.B current
+for the connected one;
+.B \-\-current
+remembers its current settings.
+.TP
+.BR game\-mode " [status|on|off|add \fIword\fR|remove \fIword\fR]"
+Use Low Latency while a game runs. A process counts as a game if its command line contains one of
+the listed words (Steam, gamescope, Lutris and Heroic games by default).
+.TP
+.BR audio\-follow " [status|on|off]"
+Make the dongle the default audio output (and, with HFP on, microphone) while a headset is
+connected, and switch back afterwards. Uses PipeWire.
+.SS Programs
+.TP
+.B gui
+Settings window (needs PyQt6 or PySide6).
+.TP
+.BR tray " [" \-\-interval " \fIseconds\fR]"
+System tray icon.
+.TP
+.BR monitor " [" \-\-notify "] [" \-\-all "] [" \-\-no\-reconnect "] [" \-\-no\-automation ]
+Print headset and setting changes as they happen, show notifications with
+.BR \-\-notify ,
+and apply the automation above. While it runs, it shares the dongle with other btwctl commands.
+.TP
+.BR waybar " [" \-\-interval " \fIseconds\fR]"
+Status as JSON for a waybar or polybar module.
+.TP
+.BI raw " byte..." \fR\ [\fB\-\-listen \fIseconds\fR]
+Send a raw command and print the replies (protocol exploration).
+.SH FILES
+.TP
+.I ~/.config/btwctl/config.ini
+Per\-headset preferences, game mode and audio\-follow settings.
+.TP
+.I btwctl\-monitor.service
+The background service (systemd user unit). Start it with
+.BR "systemctl \-\-user enable \-\-now btwctl\-monitor.service" .
+.TP
+.I /usr/lib/udev/rules.d/70\-btwctl.rules
+Gives the logged\-in user access to the dongle. Unplug and replug the dongle after installing.
+.SH ENVIRONMENT
+.TP
+.B BTW5_DEVICE
+USB ID of the dongle, like
+.BR \-\-device .
+.TP
+.BR LANGUAGE ", " LANG
+Language of the window and tray, if translated.
+.SH EXAMPLES
+.nf
+btwctl status
+btwctl ll
+btwctl pair momentum
+btwctl prefer current \-\-current
+btwctl game\-mode on
+btwctl \-\-notify toggle        # for a keyboard shortcut
+.fi
+.SH SEE ALSO
+.BR wpctl (1),
+.BR systemctl (1)
+.PP
+https://github.com/doodersrage/btwctl

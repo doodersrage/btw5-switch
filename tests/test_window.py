@@ -200,3 +200,23 @@ def test_audio_follow_checkbox(app, make, monkeypatch):
     assert not w.audio_follow.isChecked()
     w.audio_follow.click()
     assert Config().audio_follow and "follow the headset" in w.message()
+
+
+def test_tray_leaves_connect_notifications_to_the_service(app, monkeypatch):
+    """The tray and the background service both used to announce every (dis)connect."""
+    from btwctl import tray as tray_mod
+    shown = []
+    t = tray_mod.Tray.__new__(tray_mod.Tray)     # just the parts on_state needs
+    t.state = None
+    t.icon = type("Icon", (), {"showMessage": lambda self, *a: shown.append(a[1]),
+                               "setToolTip": lambda self, *a: None})()
+    t.build_menu = lambda: None
+    base = {"aptx_mode": "HQ", "hfp": False, "auto_hfp": False, "paired": []}
+    on = dict(base, headset={"name": "MOMENTUM 4", "address": "ba:52:e9:09:80:c3"})
+    off = dict(base, headset=None)
+    for service_running, expect in ((True, 0), (False, 1)):
+        shown.clear()
+        t.state = None
+        t.on_state(dict(off, service=service_running))
+        t.on_state(dict(on, service=service_running))
+        assert len(shown) == expect, (service_running, shown)

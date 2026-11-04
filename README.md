@@ -321,7 +321,7 @@ python docs/screenshot.py docs/window.png   # regenerate the README screenshot
 Code layout: `btwctl/protocol.py` (frames and parsers), `btwctl/device.py` (USB access, requests), `btwctl/broker.py` (sharing the dongle), `btwctl/automation.py`, `btwctl/audio.py` and `btwctl/config.py` (per-headset settings, game mode, sound follows the headset), `btwctl/cli.py`, `btwctl/window.py` and `btwctl/tray.py` (sharing `btwctl/qt.py`).
 `aur/` holds the release PKGBUILD, `packaging/` builds the `.deb` and `.rpm`, `debian/` and `.copr/` are for an Ubuntu PPA and Fedora COPR ([how to publish](packaging/PUBLISHING.md)).
 Translations: see [CONTRIBUTING-translations.md](CONTRIBUTING-translations.md).
-To release: update `CHANGELOG.md` and `btwctl/__init__.py`, then push a tag like `v0.6`; GitHub Actions builds the packages and publishes the release.
+To release: update `CHANGELOG.md`, `btwctl/__init__.py` and the `<releases>` in `contrib/io.github.doodersrage.btwctl.metainfo.xml`, then push a tag like `v0.6`; GitHub Actions builds the packages and publishes the release.
 
 ## Status
 

@@ -58,12 +58,15 @@ udevadm control --reload-rules >/dev/null 2>&1 || :
 %doc README.md contrib/polybar.ini contrib/waybar
 %{_bindir}/btwctl
 %{_bindir}/btw5-switch
+%{_mandir}/man1/btwctl.1*
+%{_mandir}/man1/btw5-switch.1*
 %{python3_sitelib}/btwctl/
 %{_udevrulesdir}/70-btwctl.rules
 %{_userunitdir}/btwctl-monitor.service
 %{_userunitdir}/btw5-switch-monitor.service
 %{_datadir}/applications/btwctl.desktop
 %{_datadir}/applications/btwctl-tray.desktop
+%{_metainfodir}/io.github.doodersrage.btwctl.metainfo.xml
 %{_datadir}/bash-completion/completions/btwctl
 %{_datadir}/bash-completion/completions/btw5-switch
 %{_datadir}/zsh/site-functions/_btwctl

@@ -39,7 +39,12 @@ class Tray:
     # --- background jobs ---------------------------------------------------
 
     def refresh(self):
-        self.worker.run(snapshot, self.on_state)
+        def job():
+            from . import service
+            st = snapshot()
+            st["service"] = service.is_active()
+            return st
+        self.worker.run(job, self.on_state)
 
     def act(self, what, fn, refresh_after_ms=500):
         def done(r):
@@ -98,7 +103,8 @@ class Tray:
             return
         prev, self.state = self.state, r
         h = r["headset"]
-        if prev is not None:
+        # The background service already notifies about (dis)connects; don't say it twice.
+        if prev is not None and not r.get("service"):
             ph = prev["headset"]
             if h and (not ph or ph["address"] != h["address"]):
                 self.icon.showMessage(tr("BT-W Control"), tr("Connected: {headset}").format(headset=h["name"] or h["address"]),

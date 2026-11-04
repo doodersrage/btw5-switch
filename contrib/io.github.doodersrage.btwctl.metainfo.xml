@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.doodersrage.btwctl</id>
+  <name>BT-W Control</name>
+  <summary>Settings for Creative BT-W5 and BT-W6 Bluetooth audio dongles</summary>
+  <developer id="io.github.doodersrage">
+    <name>Robert McDowell</name>
+  </developer>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <launchable type="desktop-id">btwctl.desktop</launchable>
+  <description>
+    <p>
+      Creative only makes its app for the BT-W5 and BT-W6 USB Bluetooth audio dongles for Windows and macOS.
+      BT-W Control does the same on Linux.
+    </p>
+    <ul>
+      <li>Switch aptX Adaptive between High Quality and Low Latency</li>
+      <li>Turn the headset microphone (HFP) on or off</li>
+      <li>Pair new headsets and switch between paired ones</li>
+      <li>Remember settings for each headset and apply them when it connects</li>
+      <li>Use Low Latency automatically while a game is running</li>
+      <li>Make the dongle the default audio device while a headset is connected</li>
+      <li>Get a notification when a headset connects or disconnects</li>
+    </ul>
+    <p>
+      It comes with a settings window, a system tray icon and a command line tool (btwctl).
+    </p>
+  </description>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The settings window</caption>
+      <image>https://raw.githubusercontent.com/doodersrage/btwctl/main/docs/window.png</image>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://github.com/doodersrage/btwctl</url>
+  <url type="bugtracker">https://github.com/doodersrage/btwctl/issues</url>
+  <url type="vcs-browser">https://github.com/doodersrage/btwctl</url>
+  <url type="translate">https://github.com/doodersrage/btwctl/blob/main/CONTRIBUTING-translations.md</url>
+  <categories>
+    <category>Settings</category>
+    <category>HardwareSettings</category>
+  </categories>
+  <keywords>
+    <keyword>bluetooth</keyword>
+    <keyword>aptx</keyword>
+    <keyword>headset</keyword>
+    <keyword>creative</keyword>
+    <keyword>bt-w5</keyword>
+    <keyword>bt-w6</keyword>
+  </keywords>
+  <provides>
+    <binary>btwctl</binary>
+    <modalias>usb:v041Ep3130*</modalias>
+    <modalias>usb:v041Ep3132*</modalias>
+  </provides>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.8" date="2026-11-04">
+      <description>
+        <p>Sound follows the headset; the window and tray can be translated; PPA and COPR packaging.</p>
+      </description>
+    </release>
+    <release version="0.7" date="2026-11-04">
+      <description>
+        <p>Renamed from btw5-switch to btwctl; Creative BT-W6 support.</p>
+      </description>
+    </release>
+    <release version="0.6" date="2026-11-04">
+      <description>
+        <p>First release: settings window, tray icon, per-headset settings, game mode and packages.</p>
+      </description>
+    </release>
+  </releases>
+</component>

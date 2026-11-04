@@ -65,7 +65,10 @@ def main():
     pot_path = os.path.join(LOCALE, "btwctl.pot")
     if check:
         current = open(pot_path, encoding="utf-8").read() if os.path.exists(pot_path) else ""
-        if current != pot:
+
+        def messages_only(text):   # source line numbers (#: comments) may drift; that's fine
+            return [line for line in text.splitlines() if not line.startswith("#:")]
+        if messages_only(current) != messages_only(pot):
             sys.exit("btwctl/locale/btwctl.pot is out of date: run  python tools/update-translations.py")
         print(f"btwctl.pot up to date ({len(messages)} messages)")
         return

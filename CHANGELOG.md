@@ -1,5 +1,12 @@
 # Changelog
 
+## Next (not released yet)
+
+- The tray no longer repeats the background service's "headset connected/disconnected" notifications.
+- `man btwctl`.
+- Software centres (KDE Discover, GNOME Software) show BT-W Control with a description and screenshot (AppStream metadata).
+- Releases include a `SHA256SUMS` file to verify downloads.
+
 ## 0.8 (not released yet)
 
 - **Sound follows the headset**: the dongle becomes the default audio output (and, with the headset microphone on, the default microphone) while a headset is connected, and the previous device comes back when it disconnects. Turn it on in the window, the tray menu or with `btwctl audio-follow on`. Uses PipeWire.

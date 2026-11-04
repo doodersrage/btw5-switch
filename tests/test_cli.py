@@ -147,3 +147,23 @@ def test_raw_rejects_bad_bytes(dongle, capsys):
 
 def test_scan_zero_seconds_json(dongle, capsys):
     assert json.loads(run(capsys, "scan", "0", "--json")) == {"found": [], "connected": None}
+
+
+def test_man_page_documents_every_command():
+    import os
+    import re
+    page = open(os.path.join(os.path.dirname(__file__), "..", "docs", "btwctl.1")).read()
+    page = page.replace("\\-", "-")
+    sub = next(a for a in cli.build_parser()._actions if a.dest == "cmd")
+    missing = [c for c in sub.choices if not re.search(rf"\b{re.escape(c)}\b", page)]
+    assert not missing, f"not in docs/btwctl.1: {missing}"
+
+
+def test_appstream_release_matches_version():
+    """Software centres show the newest <release>; it must be this version (update it when releasing)."""
+    import os
+    import xml.etree.ElementTree as ET
+    from btwctl import __version__
+    path = os.path.join(os.path.dirname(__file__), "..", "contrib", "io.github.doodersrage.btwctl.metainfo.xml")
+    newest = ET.parse(path).getroot().find("releases/release").get("version")
+    assert newest == __version__, f"add a <release version=\"{__version__}\"> to {os.path.basename(path)}"

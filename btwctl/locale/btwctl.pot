@@ -3,88 +3,88 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 
-#: btwctl/tray.py:50
+#: btwctl/tray.py:55
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "The dongle rejected: {action} (status 0x{status:02x})"
 msgstr ""
 
-#: btwctl/tray.py:70
+#: btwctl/tray.py:75
 msgid "Game mode needs the background service. Turn it on in the BT-W Control window."
 msgstr ""
 
-#: btwctl/tray.py:88
+#: btwctl/tray.py:93
 msgid "aptX Low Latency"
 msgstr ""
 
-#: btwctl/tray.py:88
+#: btwctl/tray.py:93
 msgid "aptX High Quality"
 msgstr ""
 
-#: btwctl/tray.py:104
+#: btwctl/tray.py:110
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Connected: {headset}"
 msgstr ""
 
-#: btwctl/tray.py:107
+#: btwctl/tray.py:113
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Disconnected: {headset}"
 msgstr ""
 
-#: btwctl/tray.py:112
+#: btwctl/tray.py:118
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Microphone (HFP): {hfp}, automatic switching: {auto}"
 msgstr ""
 
-#: btwctl/tray.py:113 btwctl/tray.py:113
+#: btwctl/tray.py:119 btwctl/tray.py:119
 msgid "on"
 msgstr ""
 
-#: btwctl/tray.py:113 btwctl/tray.py:113
+#: btwctl/tray.py:119 btwctl/tray.py:119
 msgid "off"
 msgstr ""
 
-#: btwctl/tray.py:120
+#: btwctl/tray.py:126
 msgid "Open BT-W Control…"
 msgstr ""
 
-#: btwctl/tray.py:145
+#: btwctl/tray.py:151
 msgid "HFP"
 msgstr ""
 
-#: btwctl/tray.py:147
+#: btwctl/tray.py:153
 msgid "Switch to HFP automatically"
 msgstr ""
 
-#: btwctl/tray.py:151
+#: btwctl/tray.py:157
 msgid "auto HFP"
 msgstr ""
 
-#: btwctl/tray.py:155
+#: btwctl/tray.py:161
 msgid "Sound follows the headset"
 msgstr ""
 
-#: btwctl/tray.py:159
+#: btwctl/tray.py:165
 msgid "Low Latency while gaming"
 msgstr ""
 
-#: btwctl/tray.py:161
+#: btwctl/tray.py:167
 msgid "Applied by the background service"
 msgstr ""
 
-#: btwctl/tray.py:166
+#: btwctl/tray.py:172
 msgid "Connect to"
 msgstr ""
 
-#: btwctl/tray.py:173
+#: btwctl/tray.py:179
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "Connect to {headset}"
 msgstr ""
 
-#: btwctl/tray.py:178
+#: btwctl/tray.py:184
 msgid "disconnect"
 msgstr ""
 
-#: btwctl/tray.py:181
+#: btwctl/tray.py:187
 msgid "Quit"
 msgstr ""
 
@@ -92,7 +92,7 @@ msgstr ""
 msgid "Reading the dongle…"
 msgstr ""
 
-#: btwctl/window.py:90 btwctl/tray.py:180
+#: btwctl/window.py:90 btwctl/tray.py:186
 msgid "Refresh"
 msgstr ""
 
@@ -128,7 +128,7 @@ msgstr ""
 msgid "Needs a connected headset that supports aptX Adaptive."
 msgstr ""
 
-#: btwctl/window.py:144 btwctl/tray.py:141
+#: btwctl/window.py:144 btwctl/tray.py:147
 msgid "Headset microphone (HFP)"
 msgstr ""
 
@@ -188,7 +188,7 @@ msgstr ""
 msgid "Address"
 msgstr ""
 
-#: btwctl/window.py:191 btwctl/tray.py:176
+#: btwctl/window.py:191 btwctl/tray.py:182
 msgid "Disconnect"
 msgstr ""
 
@@ -252,11 +252,11 @@ msgstr ""
 msgid "Plug in the dongle (it also disappears briefly after HFP changes)."
 msgstr ""
 
-#: btwctl/window.py:343 btwctl/tray.py:111
+#: btwctl/window.py:343 btwctl/tray.py:117
 msgid "aptX Adaptive Low Latency"
 msgstr ""
 
-#: btwctl/window.py:343 btwctl/tray.py:111
+#: btwctl/window.py:343 btwctl/tray.py:117
 msgid "aptX Adaptive High Quality"
 msgstr ""
 
@@ -269,7 +269,7 @@ msgstr ""
 msgid "Connected · {mode} · {address}"
 msgstr ""
 
-#: btwctl/window.py:347 btwctl/tray.py:109 btwctl/tray.py:128
+#: btwctl/window.py:347 btwctl/tray.py:115 btwctl/tray.py:134
 msgid "No headset connected"
 msgstr ""
 
@@ -311,7 +311,7 @@ msgstr ""
 msgid "Headset settings and game mode are applied by 'btwctl monitor'; keep it running."
 msgstr ""
 
-#: btwctl/window.py:469 btwctl/tray.py:47
+#: btwctl/window.py:469 btwctl/tray.py:52
 #. Keep the {names} in braces as they are; they're filled in by the program.
 msgid "{action} failed: {error}"
 msgstr ""
@@ -475,6 +475,6 @@ msgstr ""
 msgid "Pair"
 msgstr ""
 
-#: btwctl/window.py:715 btwctl/window.py:54 btwctl/window.py:79 btwctl/window.py:325 btwctl/tray.py:27 btwctl/tray.py:70 btwctl/tray.py:47 btwctl/tray.py:104 btwctl/tray.py:50 btwctl/tray.py:107
+#: btwctl/window.py:715 btwctl/window.py:54 btwctl/window.py:79 btwctl/window.py:325 btwctl/tray.py:27 btwctl/tray.py:75 btwctl/tray.py:52 btwctl/tray.py:110 btwctl/tray.py:55 btwctl/tray.py:113
 msgid "BT-W Control"
 msgstr ""

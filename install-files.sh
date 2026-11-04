@@ -21,6 +21,9 @@ contrib/btwctl.desktop              usr/share/applications/btwctl.desktop
 contrib/btwctl-tray.desktop         usr/share/applications/btwctl-tray.desktop
 contrib/btwctl-monitor.service      usr/lib/systemd/user/btwctl-monitor.service
 contrib/btw5-switch-monitor.service usr/lib/systemd/user/btw5-switch-monitor.service
+contrib/io.github.doodersrage.btwctl.metainfo.xml usr/share/metainfo/io.github.doodersrage.btwctl.metainfo.xml
+docs/btwctl.1                       usr/share/man/man1/btwctl.1
+docs/btw5-switch.1                  usr/share/man/man1/btw5-switch.1
 README.md                         usr/share/doc/btwctl/README.md
 contrib/polybar.ini               usr/share/doc/btwctl/polybar.ini
 contrib/waybar/config.jsonc       usr/share/doc/btwctl/waybar/config.jsonc

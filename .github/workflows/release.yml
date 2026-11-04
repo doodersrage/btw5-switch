@@ -60,8 +60,10 @@ jobs:
           - **Fedora**: download the `.rpm` below, then `sudo dnf install ./btwctl-*.noarch.rpm`
           - **Others**: see the [README](https://github.com/doodersrage/btwctl#install)
 
-          Then unplug the BT-W5 and plug it back in.
+          Then unplug the dongle and plug it back in. To verify a download: `sha256sum -c SHA256SUMS --ignore-missing`
           MD
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS && cat SHA256SUMS
       - run: gh release create "$GITHUB_REF_NAME" dist/* --title "btwctl ${GITHUB_REF_NAME#v}" --notes-file notes.md
         env:
           GH_TOKEN: ${{ github.token }}

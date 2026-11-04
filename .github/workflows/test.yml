@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - run: sudo apt-get install -y --no-install-recommends zsh fish
+      - run: sudo apt-get install -y --no-install-recommends zsh fish appstream desktop-file-utils groff-base
       - run: |
           bash -n completions/btwctl.bash
           zsh -n completions/_btwctl
@@ -44,6 +44,9 @@ jobs:
           sh -n install.sh
           sh -n ci-install-check.sh
           python3 tools/update-translations.py --check
+          appstreamcli validate --no-net contrib/io.github.doodersrage.btwctl.metainfo.xml
+          desktop-file-validate contrib/*.desktop
+          man --warnings -l docs/btwctl.1 2>&1 >/dev/null | (! grep .)
           for f in packaging/*.sh; do sh -n "$f"; done
 
   # Follow the README's install steps exactly, on the distributions it names.
