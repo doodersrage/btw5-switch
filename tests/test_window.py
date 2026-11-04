@@ -45,7 +45,7 @@ def make(app, monkeypatch):
         w = Window()
         w.show()
         windows.append(w)
-        wait(app, lambda: not w.worker.busy and w.state is not None or "not found" in w.title.text())
+        wait(app, lambda: not w.worker.busy and (w.state is not None or w.title.text() == "No dongle found"))
         return w
     yield make
     for w in windows:
@@ -132,7 +132,7 @@ def test_dongle_missing(make):
         def open(self):
             raise device.NotFound()
     w = make(Missing())
-    assert w.title.text() == "BT-W5 not found"
+    assert w.title.text() == "No dongle found"
     assert not w.hq.isEnabled() and not w.scan_btn.isEnabled() and not w.forget_btn.isEnabled()
 
 

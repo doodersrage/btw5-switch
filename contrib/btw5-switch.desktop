@@ -2,7 +2,7 @@
 Type=Application
 Name=BT-W5 Switch
 GenericName=Bluetooth audio dongle settings
-Comment=Settings for the Creative BT-W5: aptX mode, headset microphone, pairing
+Comment=Settings for the Creative BT-W5 and BT-W6: aptX mode, headset microphone, pairing
 Exec=btw5-switch gui
 Icon=audio-headphones
 Terminal=false

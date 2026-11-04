@@ -9,7 +9,7 @@ test "$(readlink -f "$(command -v btw5-switch)")" = "$(readlink -f "$BIN")"
 btw5-switch --version
 # no dongle in CI: must fail with the friendly message, not a traceback
 out=$(btw5-switch status 2>&1) && exit 1
-echo "$out" | grep -q "Creative BT-W5 not found"
+echo "$out" | grep -q "No Creative BT-W5 or BT-W6 found"
 test -f /usr/lib/udev/rules.d/70-btw5-switch.rules
 test -f /usr/share/applications/btw5-switch.desktop
 test -f /usr/share/applications/btw5-switch-tray.desktop

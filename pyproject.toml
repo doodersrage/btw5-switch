@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "btw5-switch"
 dynamic = ["version"]
-description = "Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)"
+description = "Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"

@@ -1,11 +1,12 @@
-name: Another Creative dongle (BT-W3, BT-W4, BT-W6, …)
-description: Help add support for a dongle other than the BT-W5
+name: BT-W6 report, or another Creative dongle (BT-W3, BT-W4, …)
+description: Tell us what works on a BT-W6, or help add support for another dongle
 labels: [new device]
 body:
   - type: markdown
     attributes:
       value: |
-        Other Creative BT-W dongles may speak the same protocol. Thanks for helping find out!
+        The BT-W6 is supported but hasn't been tested by the author, and other Creative BT-W
+        dongles may speak the same protocol. Thanks for helping find out!
         Find your dongle's USB ID with `lsusb | grep -i creative` (it looks like `041e:XXXX`).
   - type: input
     id: model

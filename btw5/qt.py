@@ -39,6 +39,8 @@ def snapshot(with_info=False):
         st["slots"] = [{"slot": s, "address": a, "name": n} for s, a, n in d.slots()]
         st["paired"] = [x for x in st["slots"] if x["address"] != P.ZERO_ADDR]
         if with_info:
+            from .device import dongle_info
+            st["dongle_info"] = dongle_info()
             st["firmware"] = d.info_str(P.INFO_FIRMWARE)
             st["serial"] = d.info_str(P.INFO_SERIAL)
     return st

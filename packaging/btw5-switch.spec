@@ -5,7 +5,7 @@
 Name:           btw5-switch
 Version:        0.6
 Release:        1%{?dist}
-Summary:        Control the Creative BT-W5 Bluetooth audio dongle
+Summary:        Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
 License:        MIT
 URL:            https://github.com/doodersrage/btw5-switch
 Source0:        %{url}/archive/refs/tags/v%{version}/%{srcname}-%{version}.tar.gz

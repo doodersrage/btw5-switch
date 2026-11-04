@@ -221,10 +221,21 @@ class Window(W.QMainWindow):
         # device info
         self.device = W.QGroupBox("Dongle")
         form = W.QFormLayout(self.device)
+        form.setFieldGrowthPolicy(W.QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        self.model = W.QLabel("–")
+        self.model_note = W.QLabel(
+            "Reported to work by users but not tested here. Please "
+            "<a href='https://github.com/doodersrage/btw5-switch/issues/new/choose'>report</a> what works.")
+        self.model_note.setWordWrap(True)
+        self.model_note.setSizePolicy(W.QSizePolicy.Policy.Expanding, W.QSizePolicy.Policy.Preferred)
+        self.model_note.setOpenExternalLinks(True)
+        self.model_note.hide()
         self.firmware = W.QLabel("–")
         self.serial = W.QLabel("–")
-        for label in (self.firmware, self.serial):
+        for label in (self.model, self.firmware, self.serial):
             label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        form.addRow("Model:", self.model)
+        form.addRow("", self.model_note)
         form.addRow("Firmware:", self.firmware)
         form.addRow("Serial number:", self.serial)
         self.diag_btn = W.QPushButton(theme_icon("edit-copy"), "Copy diagnostics")
@@ -302,7 +313,7 @@ class Window(W.QMainWindow):
         if isinstance(r, Exception):
             self.state = None
             if isinstance(r, NotFound):
-                self.title.setText("BT-W5 not found")
+                self.title.setText("No dongle found")
                 self.subtitle.setText("Plug in the dongle (it also disappears briefly after HFP changes).")
             else:
                 self.title.setText("BT-W5")
@@ -314,6 +325,10 @@ class Window(W.QMainWindow):
         if "firmware" in r:
             self.info_loaded = True
             self.firmware.setText(r["firmware"] or "unknown")
+            dongle = r.get("dongle_info")
+            if dongle:
+                self.model.setText(f"{dongle['model']} ({dongle['usb_id']})")
+                self.model_note.setVisible(not dongle["tested"])
             self.serial.setText(r["serial"] or "unknown")
 
         h = r["headset"]

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7 (not released yet)
+
+- **Creative BT-W6** (`041e:3132`) is found automatically, with access without sudo. aptX switching has been reported to work by a user; the rest is expected to but hasn't been confirmed. The model is shown by `info` and in the window.
+- Arch Linux package (`.pkg.tar.zst`) on the release page.
+
 ## 0.6
 
 First release.

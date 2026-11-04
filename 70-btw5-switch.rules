@@ -1,3 +1,4 @@
-# Creative BT-W5 Bluetooth audio dongle:
+# Creative BT-W5 and BT-W6 Bluetooth audio dongles:
 # give the locally logged-in user access so btw5-switch works without sudo.
 SUBSYSTEM=="usb", ATTR{idVendor}=="041e", ATTR{idProduct}=="3130", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="041e", ATTR{idProduct}=="3132", TAG+="uaccess"

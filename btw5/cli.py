@@ -52,9 +52,15 @@ def cmd_status(d, args):
 
 
 def cmd_info(d, args):
-    info = {"firmware": d.info_str(P.INFO_FIRMWARE), "serial": d.info_str(P.INFO_SERIAL)}
+    from .device import dongle_info
+    dongle = dongle_info()
+    info = {"model": dongle and dongle["model"], "usb_id": dongle and dongle["usb_id"],
+            "firmware": d.info_str(P.INFO_FIRMWARE), "serial": d.info_str(P.INFO_SERIAL)}
     if args.json:
         return emit_json(info)
+    if dongle:
+        note = "" if dongle["tested"] else "  (reported to work by users; please report what works)"
+        print(f"Model    : {dongle['model']} ({dongle['usb_id']}){note}")
     print(f"Firmware : {info['firmware'] or 'unknown'}")
     print(f"Serial   : {info['serial'] or 'unknown'}")
 
@@ -510,7 +516,7 @@ def run_notifying(args):
 def build_parser():
     ap = argparse.ArgumentParser(
         prog="btw5-switch",
-        description="Control the Creative BT-W5 Bluetooth audio dongle.",
+        description="Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles.",
         epilog="Volume is a standard USB Audio control: use your desktop's volume "
                "settings, wpctl or alsamixer.")
     ap.add_argument("-v", "--verbose", action="store_true", help="hex-dump USB traffic to stderr")

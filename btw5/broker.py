@@ -105,8 +105,8 @@ def default_transport(busy_wait=3.0):
     """Use a running broker if there is one, otherwise the USB device directly."""
     from . import device
     path = socket_path()
-    # the broker shares the BT-W5; another --device is always opened directly
-    if (device.VENDOR_ID, device.PRODUCT_ID) == (0x041e, 0x3130) and path and broker_available(path):
+    # the broker shares the auto-detected dongle; an explicit --device is always opened directly
+    if device.auto_detect() and path and broker_available(path):
         return SocketTransport(path)
     return UsbTransport(busy_wait=busy_wait)
 

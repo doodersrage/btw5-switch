@@ -1,4 +1,4 @@
-"""Talking to the BT-W5: a USB transport plus the request/reply logic on top."""
+"""Talking to the dongle: a USB transport plus the request/reply logic on top."""
 
 import errno
 import sys
@@ -7,11 +7,19 @@ import time
 from . import protocol as P
 
 VENDOR_ID = 0x041e   # Creative Technology
-PRODUCT_ID = 0x3130  # BT-W5
+
+# Dongles known to speak this protocol: product id -> (model, tested by the author)
+MODELS = {
+    0x3130: ("BT-W5", True),
+    0x3132: ("BT-W6", False),   # aptX switching confirmed by a user; the rest is the same app family
+}
+
+# None = use whichever known model is plugged in; set by --device / BTW5_DEVICE
+PRODUCT_ID = None
 
 
 def use_device(spec):
-    """Talk to another USB ID ('041e:3132'), e.g. to try a different Creative dongle."""
+    """Talk to a specific USB ID ('041e:3132'), e.g. to try a dongle that isn't in MODELS."""
     global VENDOR_ID, PRODUCT_ID
     try:
         vid, pid = (int(x, 16) for x in spec.split(":"))
@@ -20,8 +28,45 @@ def use_device(spec):
     VENDOR_ID, PRODUCT_ID = vid, pid
 
 
+def auto_detect():
+    """True unless a specific device was chosen with --device."""
+    return PRODUCT_ID is None
+
+
+def model_name(pid, vid=0x041e):
+    if vid == 0x041e and pid in MODELS:
+        return f"Creative {MODELS[pid][0]}"
+    return f"USB device {vid:04x}:{pid:04x}"
+
+
+def find_dongle():
+    """The usb.core.Device to talk to, or None."""
+    usb = _usb()
+    if not auto_detect():
+        return usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+    for pid in MODELS:
+        dev = usb.core.find(idVendor=0x041e, idProduct=pid)
+        if dev is not None:
+            return dev
+    return None
+
+
+def dongle_info():
+    """{'model', 'usb_id', 'tested'} of the dongle in use, or None. Doesn't need to open it."""
+    try:
+        dev = find_dongle()
+    except BTW5Error:
+        return None
+    if dev is None:
+        return None
+    known = MODELS.get(dev.idProduct) if dev.idVendor == 0x041e else None
+    return {"model": model_name(dev.idProduct, dev.idVendor),
+            "usb_id": f"{dev.idVendor:04x}:{dev.idProduct:04x}",
+            "tested": bool(known and known[1])}
+
+
 def other_creative_devices():
-    """[(product id, name)] of plugged-in Creative USB devices that aren't the selected one."""
+    """[(product id, name)] of plugged-in Creative USB devices we don't know as dongles."""
     try:
         usb = _usb()
         devs = list(usb.core.find(find_all=True, idVendor=0x041e))
@@ -29,7 +74,7 @@ def other_creative_devices():
         return []
     out = []
     for d in devs:
-        if d.idProduct == PRODUCT_ID:
+        if d.idProduct in MODELS or d.idProduct == PRODUCT_ID:
             continue
         try:
             name = d.product
@@ -37,6 +82,8 @@ def other_creative_devices():
             name = None
         out.append((d.idProduct, name or "unknown Creative device"))
     return out
+
+
 HID_INTERFACE = 0
 EP_IN = 0x81
 
@@ -50,10 +97,11 @@ class BTW5Error(Exception):
 class NotFound(BTW5Error):
     def __init__(self, look_for_others=False):
         """look_for_others: mention other Creative USB devices (only after a real USB lookup)."""
-        if (VENDOR_ID, PRODUCT_ID) != (0x041e, 0x3130):
+        if not auto_detect():
             super().__init__(f"No USB device {VENDOR_ID:04x}:{PRODUCT_ID:04x} found.")
             return
-        msg = "Creative BT-W5 not found. Is it plugged in? (check with: lsusb -d 041e:3130)"
+        msg = ("No Creative BT-W5 or BT-W6 found. Is it plugged in? "
+               "(check with: lsusb | grep -i creative)")
         others = other_creative_devices() if look_for_others else []
         if others:
             msg += "\n\nFound other Creative devices:\n" + "\n".join(
@@ -67,13 +115,13 @@ class NotFound(BTW5Error):
 
 class PermissionDenied(BTW5Error):
     def __init__(self):
-        super().__init__("Permission denied accessing the BT-W5.\n"
+        super().__init__("Permission denied accessing the dongle.\n"
                          "Run with sudo, or install the udev rule (see README) and re-plug the dongle.")
 
 
 class Busy(BTW5Error):
     def __init__(self):
-        super().__init__("The BT-W5 is in use by another program "
+        super().__init__("The dongle is in use by another program "
                          "(is 'btw5-switch monitor' running?).")
 
 
@@ -95,7 +143,7 @@ def _usb():
 
 
 def is_present():
-    return _usb().core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID) is not None
+    return find_dongle() is not None
 
 
 def wait_for_device(timeout=None, poll=1.0):
@@ -130,7 +178,7 @@ class UsbTransport:
 
     def open(self):
         usb = self.usb
-        self.dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
+        self.dev = find_dongle()
         if self.dev is None:
             raise NotFound(look_for_others=True)
         deadline = time.monotonic() + self.busy_wait
@@ -420,10 +468,12 @@ def read_status(d):
     def flag(v, on):
         return None if v in (None, REJECTED) else v == on
 
+    dongle = dongle_info()
     headset = None
     if conn and conn[0] == P.CONN_CONNECTED:
         headset = {"name": conn[2], "address": P.fmt_addr(conn[1])}
     return {
+        "dongle": dongle and dongle["model"],
         "connection": P.conn_state_name(conn[0]) if conn else "not connected",
         "headset": headset,
         "last_headset": {"name": conn[2], "address": P.fmt_addr(conn[1])} if conn else None,

@@ -1,8 +1,8 @@
-# btw5-switch - control the Creative BT-W5 Bluetooth audio dongle on Linux
+# btw5-switch - control the Creative BT-W5 and BT-W6 Bluetooth audio dongles on Linux
 
 [![tests](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml)
 
-Creative only makes its BT-W5 app for Windows and macOS. This does the same on Linux:
+Creative only makes its app for the BT-W5 (and BT-W6) for Windows and macOS. This does the same on Linux:
 switch aptX Adaptive between High Quality and Low Latency, turn the headset microphone (HFP) on or off,
 pair new headsets and switch between paired ones, and get a notification when a headset connects.
 
@@ -12,11 +12,11 @@ It comes with a settings window, a system tray icon, a command line tool and a s
 
 ## What you need
 
-- A Creative BT-W5 USB dongle (USB ID `041e:3130`). Check with `lsusb -d 041e:3130`.
+- A Creative BT-W5 (USB ID `041e:3130`) or BT-W6 (`041e:3132`) dongle; see [Supported dongles](#supported-dongles). Check with `lsusb | grep -i creative`.
 - Linux with Python 3.9 or newer.
 - For the window and tray icon: PyQt6 or PySide6. The install steps below include it.
 
-Sound works without this tool: the BT-W5 is a standard USB sound card, and volume is controlled from your desktop as usual.
+Sound works without this tool: the dongle is a standard USB sound card, and volume is controlled from your desktop as usual.
 This tool is for the dongle's settings and pairing.
 
 ## Install
@@ -176,7 +176,7 @@ btw5-switch waybar              # status as JSON for a status bar
 btw5-switch dump                # every readable register (for bug reports)
 btw5-switch -v <command>        # also show the raw USB traffic
 btw5-switch --notify <command>  # show the result as a desktop notification
-btw5-switch --device 041e:XXXX <command>    # try another Creative dongle (see below)
+btw5-switch --device 041e:XXXX <command>    # try another Creative dongle (see Supported dongles)
 ```
 
 `status`, `info`, `paired`, `scan` and `dump` take `--json`. Tab completion works in bash, zsh and fish, including headset names for `pair`.
@@ -188,14 +188,14 @@ See [`contrib/waybar/`](contrib/waybar/) for a waybar module that toggles the ap
 
 ## Troubleshooting
 
-**"Creative BT-W5 not found"**
+**"No Creative BT-W5 or BT-W6 found"**
 : The dongle isn't plugged in, or is restarting: it disappears for a few seconds after changing HFP or forgetting headsets. Check with `lsusb -d 041e:3130`.
 
-**"Permission denied accessing the BT-W5"**
+**"Permission denied accessing the dongle"**
 : Unplug the dongle and plug it back in. If that doesn't help, the access rule isn't installed: check that `/usr/lib/udev/rules.d/70-btw5-switch.rules` exists (if not, run `makepkg -si` or `sudo ./install.sh` again), then run `sudo udevadm control --reload-rules` and re-plug.
 The rule gives access to whoever is logged in at the computer; over SSH, use `sudo btw5-switch ...`.
 
-**"The BT-W5 is in use by another program"**
+**"The dongle is in use by another program"**
 : Another program holds the dongle. Usually that's Creative's app in a Windows VM with USB passthrough, or an old `btw5-switch` that's stuck (`pkill -f btw5-switch`).
 
 **aptX Adaptive mode shows "not available"**
@@ -228,10 +228,17 @@ Your settings are in `~/.config/btw5-switch/`.
 
 Either way, also remove `~/.config/autostart/btw5-switch-tray.desktop` if you set up the tray to start at login, and run `systemctl --user disable --now btw5-switch-monitor.service` if you enabled notifications.
 
-## Other Creative dongles
+## Supported dongles
 
-Only the BT-W5 has been tested. Other Creative BT-W dongles (BT-W3, BT-W4, BT-W6, …) may speak the same protocol.
-If `btw5-switch` finds one, it says so. You can try it with `btw5-switch --device 041e:XXXX status` (the USB ID is in `lsusb | grep -i creative`); `dump` is read-only and safe.
+| Dongle | USB ID | Status |
+|---|---|---|
+| Creative BT-W5 | `041e:3130` | Everything tested on real hardware (see [Status](#status)) |
+| Creative BT-W6 | `041e:3132` | aptX Low Latency / High Quality switching [reported to work](https://gist.github.com/RaphaelWimmer/0d0aab0bb361f6ca721de1896bc26876?permalink_comment_id=5351536) by a user. It speaks the same protocol, so the rest is expected to work too, but hasn't been confirmed |
+| Other Creative BT-W dongles (BT-W3, BT-W4, …) | ? | Unknown; see below |
+
+Both supported dongles are found automatically. **BT-W6 owners:** please [report](https://github.com/doodersrage/btw5-switch/issues/new/choose) what works, ideally with the output of `btw5-switch dump`.
+
+Other Creative BT-W dongles may speak the same protocol. If `btw5-switch` finds one, it says so; try it with `btw5-switch --device 041e:XXXX status` (the USB ID is in `lsusb | grep -i creative`). `dump` is read-only and safe.
 Please [open an issue](https://github.com/doodersrage/btw5-switch/issues/new/choose) ("Another Creative dongle") with what you find.
 
 ## How it works

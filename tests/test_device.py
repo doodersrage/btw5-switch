@@ -108,9 +108,11 @@ def test_usb_errors_become_btw5_errors():
 
 def test_not_found_mentions_other_creative_devices(monkeypatch):
     from btw5 import device
-    monkeypatch.setattr(device, "other_creative_devices", lambda: [(0x3132, "Creative BT-W4")])
+    monkeypatch.setattr(device, "PRODUCT_ID", None)
+    monkeypatch.setattr(device, "other_creative_devices", lambda: [(0x3237, "Creative BT-W4")])
     msg = str(device.NotFound(look_for_others=True))
-    assert "041e:3132  Creative BT-W4" in msg and "--device 041e:XXXX dump" in msg
+    assert msg.startswith("No Creative BT-W5 or BT-W6 found")
+    assert "041e:3237  Creative BT-W4" in msg and "--device 041e:XXXX dump" in msg
     assert "Found other" not in str(device.NotFound())
 
 
@@ -126,3 +128,51 @@ def test_use_device(monkeypatch):
     assert "No USB device 041e:3132" in str(device.NotFound(look_for_others=True))
     with pytest.raises(BTW5Error):
         device.use_device("bt-w4")
+
+
+
+class FakeUSB:
+    """Just enough of usb.core for find_dongle(): a bus with some devices on it."""
+
+    def __init__(self, *ids):
+        class Dev:
+            def __init__(self, vid, pid):
+                self.idVendor, self.idProduct = vid, pid
+
+        class Core:
+            @staticmethod
+            def find(idVendor=None, idProduct=None, find_all=False):
+                hits = [Dev(v, p) for v, p in ids
+                        if (idVendor is None or v == idVendor) and (idProduct is None or p == idProduct)]
+                return hits if find_all else (hits[0] if hits else None)
+        self.core = Core
+
+
+def test_auto_detects_bt_w5_and_bt_w6(monkeypatch):
+    from btw5 import device
+    monkeypatch.setattr(device, "PRODUCT_ID", None)
+    monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3132), (0x046d, 0xc08b)))
+    assert device.find_dongle().idProduct == 0x3132
+    monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3130)))
+    assert device.find_dongle().idProduct == 0x3130
+    monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3237)))   # some other Creative device
+    assert device.find_dongle() is None
+
+
+def test_explicit_device_overrides_auto_detection(monkeypatch):
+    from btw5 import device
+    monkeypatch.setattr(device, "PRODUCT_ID", None)
+    monkeypatch.setattr(device, "_usb", lambda: FakeUSB((0x041e, 0x3130), (0x041e, 0x3237)))
+    device.use_device("041e:3237")
+    assert device.find_dongle().idProduct == 0x3237
+    assert not device.auto_detect()
+
+
+def test_explicit_device_skips_the_broker(monkeypatch):
+    from btw5 import broker, device
+    monkeypatch.setattr(broker, "broker_available", lambda path=None: True)
+    monkeypatch.setattr(broker, "socket_path", lambda: "/nonexistent/sock")
+    monkeypatch.setattr(device, "PRODUCT_ID", None)
+    assert isinstance(broker.default_transport(), broker.SocketTransport)
+    monkeypatch.setattr(device, "PRODUCT_ID", 0x3237)
+    assert isinstance(broker.default_transport(), device.UsbTransport)

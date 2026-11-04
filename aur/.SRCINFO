@@ -1,5 +1,5 @@
 pkgbase = btw5-switch
-	pkgdesc = Control the Creative BT-W5 Bluetooth audio dongle (aptX mode, HFP, pairing, headset switching)
+	pkgdesc = Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)
 	pkgver = 0.6
 	pkgrel = 1
 	url = https://github.com/doodersrage/btw5-switch

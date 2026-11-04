@@ -33,7 +33,7 @@ Recommends: python3-pyqt6 | python3-pyside6, libnotify-bin
 Installed-Size: $size
 Maintainer: Robert McDowell <doodersrage@gmail.com>
 Homepage: https://github.com/doodersrage/btw5-switch
-Description: Control the Creative BT-W5 Bluetooth audio dongle
+Description: Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles
  Switch aptX Adaptive between High Quality and Low Latency, turn the headset
  microphone (HFP) on or off, pair and switch between headsets, and get
  notified when a headset connects. Includes a settings window, a tray icon

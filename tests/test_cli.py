@@ -70,8 +70,16 @@ def test_pair_rejected(capsys, monkeypatch):
 
 
 def test_info_json(dongle, capsys):
-    assert json.loads(run(capsys, "info", "--json")) == {"firmware": "1.2.230511.1220",
-                                                          "serial": "YDSA0180415000934F"}
+    assert json.loads(run(capsys, "info", "--json")) == {
+        "model": "Creative BT-W5", "usb_id": "041e:3130",
+        "firmware": "1.2.230511.1220", "serial": "YDSA0180415000934F"}
+
+
+def test_info_marks_untested_models(dongle, capsys, monkeypatch):
+    monkeypatch.setattr("btw5.device.dongle_info",
+                        lambda: {"model": "Creative BT-W6", "usb_id": "041e:3132", "tested": False})
+    out = run(capsys, "info")
+    assert "Model    : Creative BT-W6 (041e:3132)  (reported to work by users" in out
 
 
 def test_dump(dongle, capsys):
