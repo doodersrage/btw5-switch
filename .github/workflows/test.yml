@@ -40,5 +40,50 @@ jobs:
           bash -n completions/btw5-switch.bash
           zsh -n completions/_btw5-switch
           fish --no-execute completions/btw5-switch.fish
-          bash -n install-files.sh
           sh -n install-files.sh
+          sh -n install.sh
+          sh -n ci-install-check.sh
+
+  # Follow the README's install steps exactly, on the distributions it names.
+  install-ubuntu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - run: sudo apt-get update
+      - name: README steps
+        run: |
+          sudo apt-get install -y git pipx libusb-1.0-0
+          sudo ./install.sh
+      - name: Qt runtime libraries and checkers for the smoke test
+        run: sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3 desktop-file-utils
+      - run: ./ci-install-check.sh
+      - run: systemd-analyze --user verify /usr/lib/systemd/user/btw5-switch-monitor.service
+      - name: uninstall leaves nothing behind
+        run: |
+          sudo ./install.sh --uninstall
+          ! command -v btw5-switch
+          test ! -e /opt/btw5-switch
+          test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules
+          test ! -e /usr/share/applications/btw5-switch.desktop
+
+  install-fedora:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: fedora:latest
+    steps:
+      - run: dnf install -y git
+      - uses: actions/checkout@v5
+      - name: README steps (as root in the container, so without sudo)
+        run: |
+          dnf install -y git pipx libusb1
+          ./install.sh
+      - name: Qt runtime libraries and checkers for the smoke test
+        run: dnf install -y mesa-libEGL mesa-libGL libxkbcommon fontconfig dbus-libs desktop-file-utils
+      - run: ./ci-install-check.sh
+      - name: uninstall leaves nothing behind
+        run: |
+          ./install.sh --uninstall
+          ! command -v btw5-switch
+          test ! -e /opt/btw5-switch
+          test ! -e /usr/lib/udev/rules.d/70-btw5-switch.rules

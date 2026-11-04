@@ -6,6 +6,6 @@ Comment=Settings for the Creative BT-W5: aptX mode, headset microphone, pairing
 Exec=btw5-switch gui
 Icon=audio-headphones
 Terminal=false
-Categories=AudioVideo;Audio;Settings;HardwareSettings;
+Categories=Settings;HardwareSettings;
 Keywords=bluetooth;aptx;headset;creative;pairing;
 StartupNotify=true

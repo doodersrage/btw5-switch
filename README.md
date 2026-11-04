@@ -2,85 +2,102 @@
 
 [![tests](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml/badge.svg)](https://github.com/doodersrage/btw5-switch/actions/workflows/test.yml)
 
-Switch aptX Adaptive modes, toggle HFP (headset microphone), scan for, pair and switch between headsets, and get notified when they connect, all without Creative's Windows/macOS app.
-Comes with a settings window, a system tray icon, a command line tool and a status bar module.
+Creative only makes its BT-W5 app for Windows and macOS. This does the same on Linux:
+switch aptX Adaptive between High Quality and Low Latency, turn the headset microphone (HFP) on or off,
+pair new headsets and switch between paired ones, and get a notification when a headset connects.
+
+It comes with a settings window, a system tray icon, a command line tool and a status bar module.
+
+![The BT-W5 Switch window](docs/window.png)
+
+## What you need
+
+- A Creative BT-W5 USB dongle (USB ID `041e:3130`). Check with `lsusb -d 041e:3130`.
+- Linux with Python 3.9 or newer.
+- For the window and tray icon: PyQt6 or PySide6. The install steps below include it.
+
+Sound works without this tool: the BT-W5 is a standard USB sound card, and volume is controlled from your desktop as usual.
+This tool is for the dongle's settings and pairing.
 
 ## Install
 
-### Arch Linux
+### Arch Linux and derivatives (Manjaro, EndeavourOS, CachyOS)
 
 ```sh
+sudo pacman -S --needed base-devel git python-pyqt6
 git clone https://github.com/doodersrage/btw5-switch
 cd btw5-switch
 makepkg -si
 ```
 
-This installs `/usr/bin/btw5-switch`, a udev rule, shell completions (bash, zsh, fish), a tray launcher and a systemd user unit.
-Re-plug the dongle once so the udev rule applies. After that, no sudo is needed.
-Optional: `python-pyqt6` (or `pyside6`) for the window and tray icon, `libnotify` for notifications.
+Then **unplug the dongle and plug it back in**, so your user gets access to it.
+
+### Debian, Ubuntu, Linux Mint, Pop!_OS
+
+```sh
+sudo apt install git pipx libusb-1.0-0
+git clone https://github.com/doodersrage/btw5-switch
+cd btw5-switch
+sudo ./install.sh
+```
+
+### Fedora
+
+```sh
+sudo dnf install git pipx libusb1
+git clone https://github.com/doodersrage/btw5-switch
+cd btw5-switch
+sudo ./install.sh
+```
 
 ### Other distributions
 
-```sh
-pip install .                     # or: pip install '.[gui]' for the window and tray icon
-sudo ./install-files.sh /         # udev rule, completions, desktop file, systemd unit
-sudo udevadm control --reload-rules   # then re-plug the dongle
+Install `git`, `pipx` and libusb 1.0 with your package manager, then clone and run `sudo ./install.sh` as above.
+
+`install.sh` puts the program in `/opt/btw5-switch` (with the `btw5-switch` command in `/usr/local/bin`) and adds the device access rule, app menu entries and shell completions.
+It downloads PyUSB and PyQt6 for the window; add `--no-gui` if you only want the command line tool.
+
+Then **unplug the dongle and plug it back in**, so your user gets access to it.
+
+## Getting started
+
+Open **BT-W5 Switch** from your application menu, or run `btw5-switch gui`.
+You'll see the connected headset, its aptX mode and your paired headsets. Everything else is a click away.
+
+From a terminal, `btw5-switch status` shows the same:
+
+```
+$ btw5-switch status
+Headset            : MOMENTUM 4 (00:1b:66:a1:b2:c3)
+aptX Adaptive mode : High Quality
+HFP (headset mic)  : off
+Auto HFP switching : off
 ```
 
-PyUSB is also packaged by most distributions (Debian/Ubuntu: `python3-usb`, Fedora: `python3-pyusb`).
-Without installing anything, `./btw5-switch.py <command>` runs straight from the checkout (with `sudo` if you skipped the udev rule).
+If that prints an error instead, see [Troubleshooting](#troubleshooting).
 
-## Usage
+### Pairing a new headset
 
-```
-btw5-switch status              # connected headset, aptX mode, HFP and auto-HFP settings
-btw5-switch info                # firmware version and serial number
-btw5-switch ll | hq             # aptX Adaptive Low Latency / High Quality
-btw5-switch toggle              # switch between the two
-btw5-switch hfp on|off          # headset microphone (HFP) support
-btw5-switch auto-hfp on|off     # automatically switch to HFP when the mic is used
-btw5-switch paired              # list the 4 pairing slots
-btw5-switch pair momentum       # connect to a remembered headset by (part of) its name
-btw5-switch scan [seconds]      # disconnect the headset and list nearby headsets (default 15 s)
-btw5-switch pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
-btw5-switch disconnect          # disconnect the current headset
-btw5-switch forget              # forget all paired headsets (asks first; -y to skip)
-btw5-switch monitor [--notify]  # print headset and setting changes as they happen
-btw5-switch gui                 # settings window
-btw5-switch tray                # system tray icon
-btw5-switch waybar              # status as JSON for a status bar
-btw5-switch dump                # every readable register (for bug reports)
-btw5-switch -v <command>        # also hex-dump the USB traffic
-btw5-switch raw 6b 09 03        # send a raw command and print replies (protocol exploration)
-```
+1. Put the headset in pairing mode (usually: hold the power or Bluetooth button until the light flashes).
+2. In the window, click **Scan** (or run `btw5-switch scan`). This disconnects the current headset.
+3. Click **Pair** next to your headset (or run `btw5-switch pair <address>`) while it's still in pairing mode.
 
-`status`, `info`, `paired`, `scan` and `dump` take `--json`.
-
-Pairing a new headset: put it in pairing mode, run `btw5-switch scan`, then `btw5-switch pair <address>` while it's still in pairing mode.
-Often the dongle doesn't list the headset but connects to it by itself; `scan` then says so and stops.
-The dongle only connects to headsets it can reach, so if `pair` says the dongle refused (status `0x80`), turn the headset on, make sure it isn't connected to another device, or put it in pairing mode.
-
-Notes:
-- `hfp` and `forget` make the dongle re-enumerate on USB, so it briefly disappears and comes back as a new audio device.
-- Volume is a standard USB Audio control, so use your desktop's volume slider, `wpctl` or `alsamixer`.
-
-### Settings window
-
-`btw5-switch gui`, or "BT-W5 Switch" in your application menu, shows everything in one place:
-
-- the connected headset and aptX mode
-- aptX Adaptive High Quality / Low Latency, headset microphone (HFP) and automatic HFP switching
-- the 4 pairing slots, with a Connect button for each remembered headset, plus Disconnect and Forget all
-- pairing a new headset: scan with a live list of nearby headsets and their signal strength, and a Pair button for each
-- firmware version, serial number, and a "Copy diagnostics" button for bug reports
-
-It needs PyQt6 or PySide6, and works alongside the tray, the CLI and `monitor`.
+Often the dongle doesn't even list the headset but connects to it straight away; the window then says so.
+The dongle remembers up to 4 headsets. To switch to another one later, click **Connect** next to it, or run `btw5-switch pair <name>`.
 
 ### Tray icon
 
-`btw5-switch tray` (or "BT-W5 Switch" in your application menu) shows the headset and settings in its tooltip, and its menu switches aptX mode, HFP, auto HFP and between paired headsets.
-Left click toggles Low Latency / High Quality, and "Open BT-W5 Switch…" in its menu opens the settings window. It needs PyQt6 or PySide6.
-To start it on login, copy `/usr/share/applications/btw5-switch-tray.desktop` ("BT-W5 Switch (tray icon)") to `~/.config/autostart/`.
+The tray icon shows the headset and settings when you hover over it. Left click switches between Low Latency and High Quality; its menu has the other settings, your paired headsets, and **Open BT-W5 Switch…**.
+
+Start it with **BT-W5 Switch (tray icon)** from the application menu, or `btw5-switch tray`. To start it automatically when you log in:
+
+```sh
+mkdir -p ~/.config/autostart
+cp /usr/share/applications/btw5-switch-tray.desktop ~/.config/autostart/
+```
+
+- **KDE Plasma** may put new icons behind the ▲ arrow in the panel. To keep it visible: right-click the arrow → *Configure System Tray…* → *Entries* → set "btw5-switch" to *Always shown*.
+- **GNOME** has no tray of its own. Install the *AppIndicator and KStatusNotifierItem Support* extension (Ubuntu has it already), or use the window instead.
 
 ### Notifications
 
@@ -88,26 +105,88 @@ To start it on login, copy `/usr/share/applications/btw5-switch-tray.desktop` ("
 systemctl --user enable --now btw5-switch-monitor.service
 ```
 
-runs `btw5-switch monitor --notify` in the background and shows a desktop notification when a headset connects or disconnects or a setting changes.
+shows a desktop notification whenever a headset connects or disconnects or a setting changes.
+
+## Command line
+
+```
+btw5-switch status              # connected headset, aptX mode, HFP and auto-HFP settings
+btw5-switch ll | hq             # aptX Adaptive Low Latency / High Quality
+btw5-switch toggle              # switch between the two
+btw5-switch hfp on|off          # headset microphone (HFP); audio drops for a few seconds
+btw5-switch auto-hfp on|off     # switch to the microphone automatically when an app uses it
+btw5-switch paired              # list the 4 pairing slots
+btw5-switch pair momentum       # connect to a paired headset by (part of) its name
+btw5-switch scan [seconds]      # disconnect the headset and list nearby headsets (default 15 s)
+btw5-switch pair 68:00:1a:bc:5c:eb   # connect to an address shown by 'scan'
+btw5-switch disconnect          # disconnect the current headset
+btw5-switch forget              # forget all paired headsets (asks first; -y to skip)
+btw5-switch info                # firmware version and serial number
+btw5-switch gui                 # settings window
+btw5-switch tray                # system tray icon
+btw5-switch monitor [--notify]  # print (and notify about) headset and setting changes
+btw5-switch waybar              # status as JSON for a status bar
+btw5-switch dump                # every readable register (for bug reports)
+btw5-switch -v <command>        # also show the raw USB traffic
+```
+
+`status`, `info`, `paired`, `scan` and `dump` take `--json`. Tab completion works in bash, zsh and fish, including headset names for `pair`.
 
 ### Status bar
 
-`btw5-switch waybar` prints `{"text": "MOMENTUM 4 · HQ", "class": "connected", "tooltip": ...}`.
-See `contrib/waybar/` (installed to `/usr/share/doc/btw5-switch/`) for a waybar module that toggles the aptX mode on click, and `contrib/polybar.ini` for polybar.
+`btw5-switch waybar` prints `{"text": "MOMENTUM 4 · HQ", "class": "connected", "tooltip": ...}` for a waybar or polybar module.
+See [`contrib/waybar/`](contrib/waybar/) for a waybar module that toggles the aptX mode on click, and [`contrib/polybar.ini`](contrib/polybar.ini) for polybar.
 
-### Sharing the dongle
+## Troubleshooting
 
-Only one program can open the dongle's control interface at a time.
-While `btw5-switch monitor` runs, it shares the dongle over a Unix socket (`$XDG_RUNTIME_DIR/btw5-switch.sock`) and all other `btw5-switch` commands, the tray and the status bar module go through it automatically.
-Short-lived commands that find the dongle busy wait up to 3 seconds for it.
+**"Creative BT-W5 not found"**
+: The dongle isn't plugged in, or is restarting: it disappears for a few seconds after changing HFP or forgetting headsets. Check with `lsusb -d 041e:3130`.
 
-## Creative BT-W5
+**"Permission denied accessing the BT-W5"**
+: Unplug the dongle and plug it back in. If that doesn't help, the access rule isn't installed: check that `/usr/lib/udev/rules.d/70-btw5-switch.rules` exists (if not, run `makepkg -si` or `sudo ./install.sh` again), then run `sudo udevadm control --reload-rules` and re-plug.
+The rule gives access to whoever is logged in at the computer; over SSH, use `sudo btw5-switch ...`.
+
+**"The BT-W5 is in use by another program"**
+: Another program holds the dongle. Usually that's Creative's app in a Windows VM with USB passthrough, or an old `btw5-switch` that's stuck (`pkill -f btw5-switch`).
+
+**aptX Adaptive mode shows "not available"**
+: The connected headset doesn't use aptX Adaptive (for example it only supports SBC or AAC), or no headset is connected. The mode switch only works with aptX Adaptive headsets.
+
+**"The dongle refused to connect" (status 0x80)**
+: The dongle can't reach the headset. Turn the headset on, make sure it isn't connected to your phone or another computer, or put it in pairing mode and scan again.
+
+**The window or tray says it needs PyQt6 or PySide6**
+: Arch: `sudo pacman -S python-pyqt6`. Other distributions: run `sudo ./install.sh` again (without `--no-gui`).
+
+**No tray icon**
+: See the KDE and GNOME notes under [Tray icon](#tray-icon).
+
+**Something else**
+: Run the command with `-v` (for example `btw5-switch -v status`) and [open an issue](https://github.com/doodersrage/btw5-switch/issues) with the output and the output of `btw5-switch dump`. In the window, **Copy diagnostics** copies the same information.
+
+## Updating and uninstalling
+
+Update: in the `btw5-switch` folder, run `git pull`, then `makepkg -si` (Arch) or `sudo ./install.sh` (everything else).
+
+Uninstall: `sudo pacman -R btw5-switch` (Arch) or, in the `btw5-switch` folder, `sudo ./install.sh --uninstall`.
+
+Either way, also remove `~/.config/autostart/btw5-switch-tray.desktop` if you set up the tray to start at login, and run `systemctl --user disable --now btw5-switch-monitor.service` if you enabled notifications.
+
+## How it works
+
+### Creative BT-W5
 
 The Creative BT-W5 is a USB Bluetooth audio dongle.
 It is *not* a normal Bluetooth dongle, i.e. it cannot be used for connecting to non-audio devices.
 Instead, it acts as an USB audio device towards the computer and as Bluetooth host towards wireless headsets.
 
-## Protocol
+### Sharing the dongle
+
+Only one program can open the dongle's control interface at a time.
+While `btw5-switch monitor` runs (for example as the notification service), it shares the dongle over a Unix socket (`$XDG_RUNTIME_DIR/btw5-switch.sock`), and all other `btw5-switch` commands, the window, the tray and the status bar module go through it automatically.
+Short-lived commands that find the dongle busy wait up to 3 seconds for it.
+
+### Protocol
 
 The BT-W5 appears as a USB sound card (interfaces 2-4, no driver needed) plus two HID interfaces.
 Configuration goes through HID interface 0. The tool sends output report 3 as a `SET_REPORT` control transfer, and replies come back as input report 3 on interrupt endpoint `0x81`.
@@ -118,7 +197,7 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 
 | Command (cmd payload) | Meaning | Reply |
 |---|---|---|
-| `6b 0a 03 20` / `6b 0a 03 40` | aptX Adaptive LL / HQ | ack `02 0a 6b 00 0a`, `6b 09 08 <val>` |
+| `6b 0a 03 20` / `6b 0a 03 40` | aptX Adaptive LL / HQ | ack `02 0a 6b 00 0a 03 <val>`, `6b 09 08 <val>` |
 | `6b 0a 01 01` / `6b 0a 01 02` | HFP on / off | ack, then USB re-enumeration |
 | `6b 0a 02 01` / `6b 0a 02 00` | auto-HFP on / off | ack, `6b 09 07 <val>` |
 | `6b 09 <key>` | read setting: `03` aptX, `06` HFP, `07` auto-HFP, `08` active aptX mode | `6b 09 <key> <val>` |
@@ -129,7 +208,7 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 | `6b 07 ff` | forget all pairings | USB re-enumeration |
 | `09 02` / `09 03` | firmware version / serial | `09 <field> <ascii>` |
 
-Acks look like `02 0a <cmd> <status> <sub>`. Status `00` means OK, `80` means rejected right now (for example `6b 09 03` with no aptX Adaptive headset connected), `81` means unknown command.
+Acks look like `02 0a <cmd> <status> <echo>`, where the echo repeats the start of the request (all of `0a <key> <val>` for settings). Status `00` means OK, `80` means rejected right now (for example `6b 09 03` with no aptX Adaptive headset connected), `81` means unknown command.
 
 Connection states in `6b 06` frames: `06` not connected (known headset out of reach), `08` connecting, `0a` disconnected, `0b` connected.
 They also arrive unprompted when the link changes, as do setting changes (`6b 09 <key> <val>`).
@@ -145,8 +224,9 @@ The app also sends `07 01 02`, `10`, `26 01 05`, `2c 01 02` and `39 01 02`, whic
 ## Development
 
 ```sh
-python -m pytest            # protocol parsers against the capture, plus a fake dongle for the CLI
-./btw5-switch.py status     # run from the checkout
+python -m pytest            # protocol parsers against the capture, a fake dongle for the CLI and window
+./btw5-switch.py status     # run from the checkout without installing
+python docs/screenshot.py docs/window.png   # regenerate the README screenshot
 ```
 
 Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB access, requests), `btw5/broker.py` (sharing the dongle), `btw5/cli.py`, `btw5/window.py` and `btw5/tray.py` (sharing `btw5/qt.py`).
@@ -156,7 +236,7 @@ Code layout: `btw5/protocol.py` (frames and parsers), `btw5/device.py` (USB acce
 
 Tested on real hardware (firmware 1.2.230511.1220, Sennheiser MOMENTUM 4): `status`, `info`, `dump`, `paired`, aptX switching, `hfp`, `auto-hfp`, `disconnect`, `monitor` (including following the dongle through HFP re-enumeration and sharing it with other commands), `waybar`, the tray and the settings window.
 Not yet confirmed on hardware: `scan` actually listing a headset, `pair` completing a connection (so far the dongle refused because the headset wasn't reachable), and `forget`.
-If something doesn't behave as expected, run it with `-v` and open an issue with the output.
+The install steps for Ubuntu and Fedora are run automatically on every change (see the tests badge).
 
 Based on [RaphaelWimmer/btw5-switch](https://github.com/RaphaelWimmer/btw5-switch). Pull requests welcome.
 

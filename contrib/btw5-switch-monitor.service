@@ -7,7 +7,8 @@ After=graphical-session.target
 PartOf=graphical-session.target
 
 [Service]
-ExecStart=/usr/bin/btw5-switch monitor --notify
+# Through sh so it also finds a pipx install in ~/.local/bin ($$ = literal $ for systemd)
+ExecStart=/bin/sh -c 'PATH="$$HOME/.local/bin:$$PATH" exec btw5-switch monitor --notify'
 Restart=on-failure
 RestartSec=5
 
