@@ -295,6 +295,7 @@ Every report is `03 5a <cmd> <len> <payload>`, zero-padded to 65 bytes.
 | `6b 06` | current connection | `6b 06 <state> <addr6> 20 <name[32]>`; no reply right after a scan disconnect |
 | `6b 02 <slot>` | read pairing slot 0-3 | `6b 02 <slot> 80 <addr6> 1f <name[31]>` (`00` instead of `80` past the last slot) |
 | `6b 07 ff` | forget all pairings | USB re-enumeration |
+| `6b 07 <slot>` / `6b 07 <addr6>` | (tried: forget one headset) | `6b 07 00 <first byte>`, but nothing is forgotten: the firmware can only forget all |
 | `09 02` / `09 03` | firmware version / serial | `09 <field> <ascii>` |
 
 Acks look like `02 0a <cmd> <status> <echo>`, where the echo repeats the start of the request (all of `0a <key> <val>` for settings). Status `00` means OK, `80` means rejected right now (for example `6b 09 03` with no aptX Adaptive headset connected), `81` means unknown command.
