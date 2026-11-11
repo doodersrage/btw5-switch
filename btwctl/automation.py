@@ -81,6 +81,7 @@ class Automation:
         self.restore = None         # [mode, tries]: restore after a game, once aptX is readable
         self.after_restart = False  # the dongle restarted (HFP change, forget): a user action
         self.quiet_until = 0.0      # ignore setting reports caused by our own commands until then
+        self.seen = {}              # "aptx"/"hfp"/"auto-hfp" -> last value reported for this link
         self.last_aptx_query = -1e9
         self.quick_checks = 0
 
@@ -163,10 +164,12 @@ class Automation:
                 self.connected = (addr, name)
                 if self.after_restart:
                     # back after a restart the user caused (e.g. switching HFP): keep their
-                    # settings instead of re-applying the stored ones
+                    # settings instead of re-applying the stored ones. What we saw before the
+                    # restart stays, so the new HFP value counts as their change.
                     self.after_restart = False
                 else:
                     self.pending = [addr, name, self.clock() + APPLY_DELAY, 0]
+                    self.seen = {}
                 # the settings we knew belong to the previous link; read them fresh
                 for key in (P.GET_APTX, P.GET_APTX_ACTIVE, P.GET_HFP, P.GET_AUTO_HFP):
                     self.tracker.settings.pop(key, None)
@@ -180,12 +183,22 @@ class Automation:
     def adopt_user_change(self, key, value):
         """A setting changed while a headset with preferences is connected, not by us or by
         game mode: the user changed it (tray, command line, …), so remember that instead of
-        undoing it at the next connect."""
-        if not self.connected or self.pending or self.clock() < self.quiet_until:
-            return
+        undoing it at the next connect.
+
+        Only an actual change counts: a report that merely repeats the value (e.g. the
+        window or 'btwctl status' reading it) must not overwrite preferences the user
+        just saved for the connected headset."""
         names = {P.GET_APTX: "aptx", P.GET_APTX_ACTIVE: "aptx", P.GET_HFP: "hfp", P.GET_AUTO_HFP: "auto-hfp"}
         pref = names.get(key)
-        if pref is None or (pref == "aptx" and (self.game or self.restore)):
+        if pref is None:
+            return
+        before = self.seen.get(pref)
+        self.seen[pref] = value
+        if before is None or before == value:
+            return
+        if not self.connected or self.pending or self.clock() < self.quiet_until:
+            return
+        if pref == "aptx" and (self.game or self.restore):
             return
         words = {"aptx": {v: k for k, v in P.APTX.items()},
                  "hfp": {v: k for k, v in P.HFP_VALUES.items()},

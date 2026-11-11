@@ -197,6 +197,24 @@ def test_aptx_change_from_the_command_line_is_remembered(cfg, tmp_path):
     assert Config(cfg.path).preferences(HEADSET)["aptx"] == "ll"
 
 
+def test_reading_a_setting_doesnt_overwrite_new_preferences(cfg, tmp_path):
+    """Preferences saved for the connected headset survived only until the next status read:
+    the read's reply differed from them and was taken for a change by the user."""
+    r = Rig(cfg, tmp_path, hfp=0x01, auto=0x00)
+    r.connect(X3, b"X3")
+    r.report([P.BT_GET, P.GET_HFP, 0x01])
+    r.report([P.BT_GET, P.GET_AUTO_HFP, 0x00])
+    r.run(6)
+    cfg.set_preferences(X3, name="X3", hfp="off", auto_hfp="on")
+    cfg.save()
+    r.now += 5
+    r.report([P.BT_GET, P.GET_HFP, 0x01])               # e.g. 'btwctl status' or the window
+    r.report([P.BT_GET, P.GET_AUTO_HFP, 0x00])
+    r.run(2)
+    assert Config(cfg.path).preferences(X3) == {"hfp": "off", "auto-hfp": "on"}
+    assert not any("Remembering" in s for s in r.said)
+
+
 def test_game_mode_survives_a_reconnect_during_the_game(cfg, tmp_path):
     cfg.game_mode = True
     r = Rig(cfg, tmp_path, aptx=0x40)
