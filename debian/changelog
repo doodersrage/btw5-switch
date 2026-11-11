@@ -1,3 +1,9 @@
+btwctl (0.9.1) unstable; urgency=medium
+
+  * The window no longer flickers on every status check; see CHANGELOG.md.
+
+ -- Robert McDowell <doodersrage@gmail.com>  Wed, 11 Nov 2026 09:55:00 -0500
+
 btwctl (0.9) unstable; urgency=medium
 
   * Bug fixes, man page, AppStream metadata; see CHANGELOG.md.

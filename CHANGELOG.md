@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1
+
+- The window no longer flickers, or ignores clicks, every time it checks the dongle's status. Background checks used to grey out every control until they finished, and the Connect buttons were rebuilt each time.
+
 ## 0.9
 
 - The tray no longer repeats the background service's "headset connected/disconnected" notifications.

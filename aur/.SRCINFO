@@ -1,6 +1,6 @@
 pkgbase = btwctl
 	pkgdesc = Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)
-	pkgver = 0.9
+	pkgver = 0.9.1
 	pkgrel = 1
 	url = https://github.com/doodersrage/btwctl
 	install = btwctl.install
@@ -19,7 +19,7 @@ pkgbase = btwctl
 	provides = btw5-switch
 	conflicts = btw5-switch
 	replaces = btw5-switch
-	source = btwctl-0.9.tar.gz::https://github.com/doodersrage/btwctl/archive/refs/tags/v0.9.tar.gz
+	source = btwctl-0.9.1.tar.gz::https://github.com/doodersrage/btwctl/archive/refs/tags/v0.9.1.tar.gz
 	sha256sums = SKIP
 
 pkgname = btwctl
