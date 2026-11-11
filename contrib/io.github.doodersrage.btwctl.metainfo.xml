@@ -63,6 +63,11 @@
   </supports>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="0.9.2" date="2026-11-11">
+      <description>
+        <p>Per-headset settings saved while that headset is connected are no longer overwritten by the next status check.</p>
+      </description>
+    </release>
     <release version="0.9.1" date="2026-11-11">
       <description>
         <p>The window no longer flickers or ignores clicks while it checks the dongle's status.</p>

@@ -1,7 +1,7 @@
 # Builds the package from this source checkout:  makepkg -si
 # (aur/PKGBUILD is the release version that downloads a tagged tarball.)
 pkgname=btwctl
-pkgver=0.9.1
+pkgver=0.9.2
 pkgrel=1
 pkgdesc="Control the Creative BT-W5 and BT-W6 Bluetooth audio dongles (aptX mode, HFP, pairing, headset switching)"
 arch=('any')

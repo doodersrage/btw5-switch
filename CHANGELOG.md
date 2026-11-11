@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.2
+
+- Settings saved for the headset that's currently connected are kept until it reconnects. Before, the next status read (by the window, the tray or `btwctl status`) overwrote them with the dongle's current settings.
+
 ## 0.9.1
 
 - The window no longer flickers, or ignores clicks, every time it checks the dongle's status. Background checks used to grey out every control until they finished, and the Connect buttons were rebuilt each time.

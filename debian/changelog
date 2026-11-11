@@ -1,3 +1,9 @@
+btwctl (0.9.2) unstable; urgency=medium
+
+  * Keep per-headset settings saved while that headset is connected; see CHANGELOG.md.
+
+ -- Robert McDowell <doodersrage@gmail.com>  Wed, 11 Nov 2026 13:05:00 -0500
+
 btwctl (0.9.1) unstable; urgency=medium
 
   * The window no longer flickers on every status check; see CHANGELOG.md.
