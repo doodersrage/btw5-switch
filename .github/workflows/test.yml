@@ -19,7 +19,7 @@ jobs:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
       - name: Qt runtime libraries (window tests run offscreen)
-        run: sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
       - run: pip install pytest PyQt6 .
       - run: python -m pytest -q
         env:
@@ -35,7 +35,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - run: sudo apt-get install -y --no-install-recommends zsh fish appstream desktop-file-utils groff-base
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends zsh fish appstream desktop-file-utils groff-base
       - run: |
           bash -n completions/btwctl.bash
           zsh -n completions/_btwctl
