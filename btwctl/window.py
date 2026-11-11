@@ -54,7 +54,7 @@ class Window(W.QMainWindow):
         self.setWindowTitle(tr("BT-W Control"))
         self.setWindowIcon(theme_icon())
         self.build()
-        self.worker.busy_changed.connect(lambda _busy: self.update_enabled())
+        self.worker.acting_changed.connect(lambda _acting: self.update_enabled())
         self.update_enabled()
 
         self.timer = QtCore.QTimer(self)
@@ -304,7 +304,7 @@ class Window(W.QMainWindow):
             st = snapshot(with_info=with_info)
             st["service"] = service.is_active()
             return st
-        self.worker.run(job, self.on_state)
+        self.worker.run(job, self.on_state, quiet=True)
 
     def auto_refresh(self):
         if self.isVisible() and not self.worker.busy:
@@ -379,9 +379,14 @@ class Window(W.QMainWindow):
                 self.slots.setItem(row, 2, W.QTableWidgetItem(tr("✓ Connected")))
             else:
                 self.slots.setItem(row, 2, W.QTableWidgetItem(""))
-                btn = W.QPushButton(tr("Connect"))
-                btn.clicked.connect(lambda _=False, a=s["address"], n=s["name"] or addr: self.connect_to(a, n))
-                self.slots.setCellWidget(row, 2, btn)
+                # keep the existing button: replacing it on every poll makes it flicker
+                key = f"{addr} {s['name']}"
+                btn = self.slots.cellWidget(row, 2)
+                if btn is None or btn.property("slot") != key:
+                    btn = W.QPushButton(tr("Connect"))
+                    btn.setProperty("slot", key)
+                    btn.clicked.connect(lambda _=False, a=s["address"], n=s["name"] or addr: self.connect_to(a, n))
+                    self.slots.setCellWidget(row, 2, btn)
 
     def fill_automation(self, r):
         self.config.reload_if_changed()
@@ -410,7 +415,7 @@ class Window(W.QMainWindow):
 
     def update_enabled(self):
         ok = self.state is not None
-        idle = not self.worker.busy
+        idle = not self.worker.acting
         h = ok and self.state["headset"] is not None
         aptx = ok and self.state["aptx_mode"] is not None
         for w in (self.hq, self.ll):

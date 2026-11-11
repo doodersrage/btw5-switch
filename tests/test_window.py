@@ -74,6 +74,19 @@ def test_shows_status(make):
     assert w.disconnect_btn.isEnabled()
 
 
+def test_background_refresh_doesnt_flicker(app, make):
+    """Status polls must not grey out the controls or rebuild the Connect buttons."""
+    w = make(FakeDongle(connected=False))
+    btn = w.slots.cellWidget(0, 2)
+    assert isinstance(btn, QtWidgets.QPushButton) and w.forget_btn.isEnabled()
+    toggles = []
+    w.worker.acting_changed.connect(toggles.append)
+    w.refresh()
+    assert w.worker.busy and w.forget_btn.isEnabled() and w.slots.isEnabled()
+    wait(app, lambda: not w.worker.busy)
+    assert toggles == [] and w.slots.cellWidget(0, 2) is btn
+
+
 def test_switch_aptx(app, make):
     fake = FakeDongle()
     w = make(fake)

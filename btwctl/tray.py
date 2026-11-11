@@ -44,7 +44,7 @@ class Tray:
             st = snapshot()
             st["service"] = service.is_active()
             return st
-        self.worker.run(job, self.on_state)
+        self.worker.run(job, self.on_state, quiet=True)
 
     def act(self, what, fn, refresh_after_ms=500):
         def done(r):

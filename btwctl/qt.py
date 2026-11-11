@@ -52,20 +52,26 @@ class Worker(QtCore.QObject):
     Each job opens the dongle, does its work and lets go, so the CLI (and the
     other GUI) keep working. Results and progress come back on the GUI thread."""
 
-    _done = Signal(object, object)       # (callback, result or exception)
+    _done = Signal(object, object, bool)  # (callback, result or exception, quiet)
     _progress = Signal(object, object)   # (callback, item)
-    busy_changed = Signal(bool)
+    busy_changed = Signal(bool)      # any job queued or running
+    acting_changed = Signal(bool)    # a non-quiet job (a user action) queued or running
 
     def __init__(self):
         super().__init__()
         self.pool = ThreadPoolExecutor(max_workers=1)
         self.pending = 0
+        self.actions = 0
         self.stopped = False
         self._done.connect(self._finish)
         self._progress.connect(lambda cb, item: cb(item))
 
-    def _finish(self, cb, result):
+    def _finish(self, cb, result, quiet):
         self.pending -= 1
+        if not quiet:
+            self.actions -= 1
+            if self.actions == 0:
+                self.acting_changed.emit(False)
         if self.pending == 0:
             self.busy_changed.emit(False)
         if cb:
@@ -75,9 +81,16 @@ class Worker(QtCore.QObject):
     def busy(self):
         return self.pending > 0
 
-    def run(self, fn, on_done=None, on_progress=None):
+    @property
+    def acting(self):
+        return self.actions > 0
+
+    def run(self, fn, on_done=None, on_progress=None, quiet=False):
         """fn() runs on the worker thread; with on_progress it's called as
         fn(report) and every report(item) reaches on_progress(item).
+
+        quiet jobs (background status reads) count as busy but not as acting,
+        so the window doesn't grey out its controls on every poll.
 
         Ignored after shutdown() (e.g. a delayed refresh firing as the app quits):
         an exception escaping a Qt callback would abort the whole process."""
@@ -86,6 +99,10 @@ class Worker(QtCore.QObject):
         self.pending += 1
         if self.pending == 1:
             self.busy_changed.emit(True)
+        if not quiet:
+            self.actions += 1
+            if self.actions == 1:
+                self.acting_changed.emit(True)
 
         def job():
             try:
@@ -95,7 +112,7 @@ class Worker(QtCore.QObject):
                     r = fn()
             except Exception as e:  # shown to the user, never fatal
                 r = e
-            self._done.emit(on_done, r)
+            self._done.emit(on_done, r, quiet)
         self.pool.submit(job)
 
     def with_device(self, fn, on_done=None, on_progress=None):
