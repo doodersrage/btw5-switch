@@ -110,12 +110,12 @@ def cmd_paired(d, args):
 def cmd_aptx(d, args):
     mode = args.cmd
     if mode == "toggle":
-        cur = d.get(P.GET_APTX)
+        cur = d.get_aptx()
         if cur in (None, REJECTED):
             sys.exit("Can't read the current aptX mode (no aptX Adaptive headset connected?).")
         mode = "hq" if cur == P.APTX["ll"] else "ll"
     print(f"Enabling aptX Adaptive {P.APTX_NAMES[P.APTX[mode]]} mode")
-    report_set(d.set(P.SET_APTX, P.APTX[mode]))
+    report_set(d.set_aptx(P.APTX[mode]))
 
 
 def cmd_hfp(d, args):

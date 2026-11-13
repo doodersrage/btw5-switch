@@ -90,7 +90,7 @@ class Tray:
             self.set_aptx("hq" if self.state["aptx_mode"] == "LL" else "ll")
 
     def set_aptx(self, mode):
-        self.act(tr("aptX Low Latency") if mode == "ll" else tr("aptX High Quality"), lambda d: d.set(P.SET_APTX, P.APTX[mode]))
+        self.act(tr("aptX Low Latency") if mode == "ll" else tr("aptX High Quality"), lambda d: d.set_aptx(P.APTX[mode]))
 
     def on_state(self, r):
         if isinstance(r, Exception):

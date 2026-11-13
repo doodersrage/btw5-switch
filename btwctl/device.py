@@ -13,6 +13,7 @@ MODELS = {
     0x3130: ("BT-W5", True),
     0x3132: ("BT-W6", False),   # aptX switching confirmed by a user; the rest is the same app family
 }
+BTW6_PID = 0x3132
 
 # None = use whichever known model is plugged in; set by --device / BTW5_DEVICE
 PRODUCT_ID = None
@@ -353,6 +354,26 @@ class BTW5:
         """Ack status (0 = accepted), or None if no ack arrived."""
         return self.command(P.CMD_BT, [P.BT_SET, key, value], echo=3)
 
+    # --- aptX mode ---------------------------------------------------------
+    # Both models set the mode with '0a 03 <val>'. The BT-W5 reads it back with
+    # '09 03'; the BT-W6 (firmware 1.0.240906.0910) rejects that, so there it is
+    # read from key 08 ('40 00' HQ, '20 00' LL). Writing key 08 is acked by the
+    # BT-W6 but changes nothing. See issue #2.
+
+    def is_btw6(self):
+        if not hasattr(self, "_btw6"):
+            info = dongle_info()
+            self._btw6 = bool(info) and info["usb_id"] == f"041e:{BTW6_PID:04x}"
+        return self._btw6
+
+    def get_aptx(self):
+        """aptX mode value (0x20/0x40), REJECTED, or None on no reply."""
+        return self.get(P.GET_APTX_ACTIVE if self.is_btw6() else P.GET_APTX)
+
+    def set_aptx(self, value):
+        """Ack status (0 = accepted), or None if no ack arrived."""
+        return self.set(P.SET_APTX, value)
+
     def info(self, field, extra=()):
         p = self.request(P.CMD_INFO, [field, *extra],
                          lambda c, p: c == P.CMD_INFO and len(p) >= 1 and p[0] == field)
@@ -461,7 +482,7 @@ class BTW5:
 def read_status(d):
     """Snapshot of everything 'status' shows, as a plain dict (JSON friendly)."""
     conn = d.connection()
-    aptx = d.get(P.GET_APTX)
+    aptx = d.get_aptx()
     hfp = d.get(P.GET_HFP)
     auto = d.get(P.GET_AUTO_HFP)
 

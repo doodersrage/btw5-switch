@@ -1,6 +1,6 @@
 from btwctl import protocol as P
 from btwctl.device import BTW5, REJECTED, read_status
-from tests.fakes import HEADSET, FakeDongle
+from tests.fakes import HEADSET, FakeDongle, report
 
 
 def test_get_and_set():
@@ -176,3 +176,54 @@ def test_explicit_device_skips_the_broker(monkeypatch):
     assert isinstance(broker.default_transport(), broker.SocketTransport)
     monkeypatch.setattr(device, "PRODUCT_ID", 0x3237)
     assert isinstance(broker.default_transport(), device.UsbTransport)
+
+
+
+class FakeBTW6(FakeDongle):
+    """BT-W6 firmware 1.0.240906.0910 as measured: '09 03' is rejected, key 08 holds the
+    mode as '<val> 00', '0a 03 <val>' sets it, and '0a 08 ..' is acked but changes nothing."""
+
+    def write(self, data):
+        cmd, p = P.split_report(data)
+        if cmd == P.CMD_BT and p[:2] == bytes([P.BT_GET, P.GET_APTX]):
+            self.sent.append((cmd, bytes(p)))
+            self.queue.append(report(P.CMD_ACK, [P.CMD_BT, P.STATUS_REJECTED, P.BT_GET]))
+        elif cmd == P.CMD_BT and p[:2] == bytes([P.BT_GET, P.GET_APTX_ACTIVE]):
+            self.sent.append((cmd, bytes(p)))
+            self.queue.append(report(P.CMD_BT, [P.BT_GET, P.GET_APTX_ACTIVE,
+                                                self.settings[P.GET_APTX_ACTIVE], 0x00]))
+        elif cmd == P.CMD_BT and p[:2] == bytes([P.BT_SET, P.GET_APTX_ACTIVE]):
+            self.sent.append((cmd, bytes(p)))
+            self.queue.append(report(P.CMD_ACK, [P.CMD_BT, P.STATUS_OK, *p[:3]]))
+        else:
+            super().write(data)
+
+
+def btw6(fake, is_btw6=True):
+    d = BTW5(fake)
+    d._btw6 = is_btw6
+    return d
+
+
+def test_btw6_reads_aptx_from_key_08():
+    with btw6(FakeBTW6(aptx=0x20)) as d:
+        assert d.get(P.GET_APTX) == REJECTED
+        assert d.get_aptx() == 0x20
+        assert read_status(d)["aptx_mode"] == "LL"
+
+
+def test_btw6_sets_aptx_with_key_03():
+    fake = FakeBTW6(aptx=0x20)
+    with btw6(fake) as d:
+        assert d.set_aptx(0x40) == P.STATUS_OK
+        assert d.get_aptx() == 0x40
+    sets = [p for c, p in fake.sent if p[:1] == bytes([P.BT_SET])]
+    assert sets == [bytes([P.BT_SET, P.SET_APTX, 0x40])]
+
+
+def test_btw5_reads_key_03():
+    fake = FakeDongle()
+    with btw6(fake, is_btw6=False) as d:
+        assert d.get_aptx() == 0x40
+    assert (P.CMD_BT, bytes([P.BT_GET, P.GET_APTX])) in fake.sent
+    assert (P.CMD_BT, bytes([P.BT_GET, P.GET_APTX_ACTIVE])) not in fake.sent
