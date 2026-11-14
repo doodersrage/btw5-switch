@@ -43,9 +43,10 @@ SCAN_START, SCAN_CONNECT = 0x01, 0x02
 SET_HFP, SET_AUTO_HFP, SET_APTX = 0x01, 0x02, 0x03
 # ... and the keys that read the current state back (09)
 GET_HFP, GET_AUTO_HFP, GET_APTX, GET_APTX_ACTIVE = 0x06, 0x07, 0x03, 0x08
-# readable keys whose meaning is unknown (constant across aptX mode, volume,
-# HFP and connection changes on firmware 1.2.230511.1220)
-GET_KEYS_ALL = range(0x00, 0x09)
+# every key 'dump' reads. Most meanings are unknown; on the BT-W6 key 08 and 0c
+# follow the aptX mode, 09 is the device name ('BT-W6 08', e.g. for Auracast)
+# and 0a is a short string ('000000').
+GET_KEYS_ALL = range(0x00, 0x20)
 
 INFO_FIRMWARE, INFO_SERIAL = 0x02, 0x03
 
@@ -138,6 +139,18 @@ def parse_setting(p):
     if len(p) < 3 or p[0] != BT_GET:
         return None
     return p[1], p[2]
+
+
+def prefixed_text(b):
+    """'<len> <ascii[len]>' -> the text (e.g. key 09 '08 42 54 2d 57 36 20 30 38' -> 'BT-W6 08'),
+    or None if b doesn't look like one."""
+    b = bytes(b)
+    if len(b) < 3 or not 2 <= b[0] <= len(b) - 1:
+        return None
+    text, rest = b[1:1 + b[0]], b[1 + b[0]:]
+    if any(rest) or not all(0x20 <= c < 0x7f for c in text):
+        return None
+    return text.decode("ascii")
 
 
 def headset_label(addr, name):

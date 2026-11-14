@@ -132,6 +132,48 @@ def test_game_mode_switches_and_restores(cfg, tmp_path):
     assert r.values[P.GET_APTX] == 0x40 and "back to High Quality" in r.said[-1]
 
 
+class BTW6Rig(Rig):
+    """BT-W6: '09 03' is rejected (no value), the mode is read from key 08."""
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self.a.aptx_key = P.GET_APTX_ACTIVE
+
+    def send(self, cmd, payload):
+        if payload[0] == P.BT_GET and payload[1] == P.GET_APTX:
+            self.sent.append(bytes(payload))
+            return
+        if payload[0] == P.BT_GET and payload[1] == P.GET_APTX_ACTIVE:
+            self.sent.append(bytes(payload))
+            self.report([P.BT_GET, P.GET_APTX_ACTIVE, self.values[P.GET_APTX], 0x00])
+            return
+        super().send(cmd, payload)
+
+
+def test_game_mode_on_btw6_reads_key_08(cfg, tmp_path):
+    cfg.game_mode = True
+    r = BTW6Rig(cfg, tmp_path, aptx=0x40)
+    r.connect()
+    r.run(4)
+    r.games("reaper SteamLaunch AppId=1")
+    r.run(4)
+    assert r.values[P.GET_APTX] == 0x20 and "switching to Low Latency" in r.said[-1]
+    r.games()
+    r.run(4)
+    assert r.values[P.GET_APTX] == 0x40 and "back to High Quality" in r.said[-1]
+    assert bytes([P.BT_GET, P.GET_APTX_ACTIVE]) in r.sent
+    assert bytes([P.BT_GET, P.GET_APTX]) not in r.sent
+
+
+def test_preferences_on_btw6(cfg, tmp_path):
+    cfg.set_preferences(HEADSET, name="MOMENTUM 4", aptx="ll")
+    r = BTW6Rig(cfg, tmp_path, aptx=0x40)
+    r.connect()
+    r.run(8)
+    assert r.sets() == [bytes([P.BT_SET, P.SET_APTX, 0x20])]
+    assert bytes([P.BT_GET, P.GET_APTX]) not in r.sent
+
+
 def test_game_mode_leaves_manual_change_alone(cfg, tmp_path):
     cfg.game_mode = True
     r = Rig(cfg, tmp_path, aptx=0x40)

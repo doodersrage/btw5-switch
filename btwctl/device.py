@@ -66,6 +66,17 @@ def dongle_info():
             "tested": bool(known and known[1])}
 
 
+def is_btw6():
+    """The dongle in use is a BT-W6 (it reads the aptX mode from another key)."""
+    info = dongle_info()
+    return bool(info) and info["usb_id"] == f"041e:{BTW6_PID:04x}"
+
+
+def aptx_key():
+    """Key to read the aptX mode with: the BT-W6 rejects '09 03', so use key 08 there."""
+    return P.GET_APTX_ACTIVE if is_btw6() else P.GET_APTX
+
+
 def other_creative_devices():
     """[(product id, name)] of plugged-in Creative USB devices we don't know as dongles."""
     try:
@@ -362,8 +373,7 @@ class BTW5:
 
     def is_btw6(self):
         if not hasattr(self, "_btw6"):
-            info = dongle_info()
-            self._btw6 = bool(info) and info["usb_id"] == f"041e:{BTW6_PID:04x}"
+            self._btw6 = is_btw6()
         return self._btw6
 
     def get_aptx(self):
@@ -511,9 +521,14 @@ def read_dump(d):
             return None
         return "rejected" if v == REJECTED else P.hexs(v)
 
+    def setting(k):
+        v = d.get_raw(k)
+        text = P.prefixed_text(v) if v not in (None, REJECTED) else None
+        return show(v) + f'  "{text}"' if text else show(v)
+
     conn = d.connection()
     return {
-        "settings (6b 09 <key>)": {f"{k:02x}": show(d.get_raw(k)) for k in P.GET_KEYS_ALL},
+        "settings (6b 09 <key>)": {f"{k:02x}": setting(k) for k in P.GET_KEYS_ALL},
         "info (09 <field>)": {"00": show(d.info(0x00)), "01 00": show(d.info(0x01, [0x00])),
                               "02": d.info_str(P.INFO_FIRMWARE), "03": d.info_str(P.INFO_SERIAL)},
         "connection (6b 06)": None if conn is None else

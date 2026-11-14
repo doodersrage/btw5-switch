@@ -110,3 +110,12 @@ def test_change_tracker_reports_only_changes():
     # acks and unrelated commands are ignored
     assert t.feed(P.CMD_ACK, bytes([0x6b, 0, 0x0a])) is None
     assert t.feed(P.CMD_INFO, b"\x02abc") is None
+
+
+def test_prefixed_text():
+    # BT-W6 key 09 (device name) and 0a, as captured from the Creative app
+    assert P.prefixed_text(bytes.fromhex("0842542d57362030 38".replace(" ", ""))) == "BT-W6 08"
+    assert P.prefixed_text(bytes.fromhex("06303030303030")) == "000000"
+    # values that aren't text
+    for v in ("40 00", "f5 03", "07 40", "3c b9 8a 08 00 02", "01", "", "02 41 42 43"):
+        assert P.prefixed_text(bytes.fromhex(v.replace(" ", ""))) is None, v
