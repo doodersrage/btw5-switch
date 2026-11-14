@@ -87,6 +87,7 @@ def test_dump(dongle, capsys):
     d = json.loads(out)
     assert d["settings (6b 09 <key>)"]["03"] == "40"
     assert d["settings (6b 09 <key>)"]["00"] == "rejected"  # not emulated by the fake
+    assert list(d["settings (6b 09 <key>)"]) == [f"{k:02x}" for k in range(0x20)]
 
 
 def test_waybar(dongle, capsys):

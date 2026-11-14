@@ -110,12 +110,12 @@ def cmd_paired(d, args):
 def cmd_aptx(d, args):
     mode = args.cmd
     if mode == "toggle":
-        cur = d.get(P.GET_APTX)
+        cur = d.get_aptx()
         if cur in (None, REJECTED):
             sys.exit("Can't read the current aptX mode (no aptX Adaptive headset connected?).")
         mode = "hq" if cur == P.APTX["ll"] else "ll"
     print(f"Enabling aptX Adaptive {P.APTX_NAMES[P.APTX[mode]]} mode")
-    report_set(d.set(P.SET_APTX, P.APTX[mode]))
+    report_set(d.set_aptx(P.APTX[mode]))
 
 
 def cmd_hfp(d, args):
@@ -274,7 +274,11 @@ def cmd_monitor(args):
                 notify(*change[1])
 
     def ask_state(send):
+        from .device import aptx_key
+        key = aptx_key()
         for cmd, payload in P.STATE_QUERIES:
+            if payload == [P.BT_GET, P.GET_APTX]:
+                payload = [P.BT_GET, key]
             send(P.build_report(cmd, payload))
 
     def start_automation(t):
@@ -290,6 +294,8 @@ def cmd_monitor(args):
             auto["obj"] = Automation(Config(), tracker, send=send, say=say,
                                      notify=notify if args.notify else None)
         auto["obj"].send = send
+        from .device import aptx_key
+        auto["obj"].aptx_key = aptx_key()  # per (re)connect: the dongle may have been swapped
         auto["on"] = auto["obj"]
 
     def tick():

@@ -554,7 +554,7 @@ class Window(W.QMainWindow):
     def set_aptx(self, mode):
         self.save_preference(aptx=mode)
         self.act(tr("Switching to aptX Low Latency") if mode == "ll" else tr("Switching to aptX High Quality"),
-                 lambda d: d.set(P.SET_APTX, P.APTX[mode]))
+                 lambda d: d.set_aptx(P.APTX[mode]))
 
     def set_hfp(self, on):
         self.save_preference(hfp="on" if on else "off")

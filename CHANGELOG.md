@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **BT-W6: the aptX mode is shown again** ([#2](https://github.com/doodersrage/btwctl/issues/2)). The BT-W6 (firmware 1.0.240906.0910 and 1.1.260429.0814) refuses the query the BT-W5 answers, so `status`, the window, the tray, `toggle`, game mode and per-headset settings said "not available" and couldn't act on the mode. On the BT-W6 it's now read from the setting that holds the active mode. Switching uses the same command as before, which is also what Creative's app sends.
+- `dump` reads settings `00`–`1f` instead of `00`–`08`, and shows text values as text (the BT-W6 answers up to `10`, including its device name).
+
 ## 0.9.2
 
 - Settings saved for the headset that's currently connected are kept until it reconnects. Before, the next status read (by the window, the tray or `btwctl status`) overwrote them with the dongle's current settings.

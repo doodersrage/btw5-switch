@@ -210,6 +210,9 @@ The rule gives access to whoever is logged in at the computer; over SSH, use `su
 **aptX Adaptive mode shows "not available"**
 : The connected headset doesn't use aptX Adaptive (for example it only supports SBC or AAC), or no headset is connected. The mode switch only works with aptX Adaptive headsets.
 
+**The dongle's LED doesn't change after `hq` / `ll`**
+: The dongle stores the new mode right away (`status` shows it), but the LED shows the mode of the current Bluetooth link to the headset, which only changes once the link switches over. Creative's app sends the same command and behaves the same way.
+
 **"The dongle refused to connect" (status 0x80)**
 : The dongle can't reach the headset. Turn the headset on, make sure it isn't connected to your phone or another computer, or put it in pairing mode and scan again.
 
@@ -253,7 +256,7 @@ Version 0.7 renamed btw5-switch to **btwctl**, since it now supports more than t
 | Dongle | USB ID | Status |
 |---|---|---|
 | Creative BT-W5 | `041e:3130` | Everything tested on real hardware (see [Status](#status)) |
-| Creative BT-W6 | `041e:3132` | aptX Low Latency / High Quality switching [reported to work](https://gist.github.com/RaphaelWimmer/0d0aab0bb361f6ca721de1896bc26876?permalink_comment_id=5351536) by a user. It speaks the same protocol, so the rest is expected to work too, but hasn't been confirmed |
+| Creative BT-W6 | `041e:3132` | Confirmed by a user (firmware 1.1.260429.0814, Sennheiser MOMENTUM True Wireless 4): `status`, `ll` / `hq`, `info` and `dump`; aptX switching was [also reported](https://gist.github.com/RaphaelWimmer/0d0aab0bb361f6ca721de1896bc26876?permalink_comment_id=5351536) on another unit. It speaks the same protocol, so the rest is expected to work too, but hasn't been confirmed |
 | Other Creative BT-W dongles (BT-W3, BT-W4, …) | ? | Unknown; see below |
 
 Both supported dongles are found automatically. **BT-W6 owners:** please [report](https://github.com/doodersrage/btwctl/issues/new/choose) what works, ideally with the output of `btwctl dump`.
@@ -308,6 +311,23 @@ Seen but not yet understood (values on firmware 1.2.230511.1220; none of them ch
 `09 00` → `2b 31 01 01 1e 04` (`041e` is Creative's vendor ID), `09 01 00` → `00 90 ad 3a 21 3c 04`, and the event `6b 06 07` after a scan starts or pairings are forgotten.
 The app also sends `07 01 02`, `10`, `26 01 05`, `2c 01 02` and `39 01 02`, which this dongle rejects with status `81` (probably meant for other Creative devices).
 `btwctl dump` prints all of these, so if you have a different firmware or headset, its output is very welcome in an issue.
+
+**BT-W6** (from `dump` and a capture of Creative's app; keys `02`, `03` and `08` on firmware 1.0.240906.0910 and 1.1.260429.0814, the others on 1.1.260429.0814): the same commands, with these differences in the settings (`6b 09 <key>`):
+
+| Key | BT-W6 |
+|---|---|
+| `02`, `03` | rejected (status `80`), also with an aptX Adaptive headset connected, so the aptX mode is read from `08` |
+| `08` | active aptX mode as two bytes: `40 00` High Quality, `20 00` Low Latency. Writing it (`6b 0a 08 ..`) is acked but changes nothing; set the mode with `6b 0a 03 <val>` as on the BT-W5 |
+| `09` | device name as `<len> <ascii>`: `BT-W6 08` (probably the name it uses for Auracast) |
+| `0a` | `<len> <ascii>`: `000000` |
+| `0b` | `f5 03 00 00` |
+| `0c` | `<mode> 00 00 00`, follows the aptX mode; also sent unprompted after a connect or mode change |
+| `0d`, `10` | `00`; `0d` is also sent unprompted after a connect |
+| `0e` | `07 40 00 00` (second byte maybe the aptX mode) |
+| `0f` | `00 00` |
+| `11`–`1f` | rejected |
+
+`6b 0a 0c <val>` is an unknown command (status `81`). Creative's app also sends `6c 01 02`, which the BT-W6 rejects with status `81` too.
 
 ![](./btw5-wireshark.png)
 
